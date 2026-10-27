@@ -38,7 +38,7 @@ jobs:
       - run: npm ci
       - name: npm audit (alto ou crítico reprova; 04, erro 10.1)
         run: npm audit --audit-level=high
-      - name: Mensagens de commit do PR (convenção tipo(frente): texto (#issue))
+      - name: "Mensagens de commit do PR (convenção tipo(frente): texto (#issue))"
         if: github.event_name == 'pull_request'
         run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}
       - name: lint (exit 0 e saída vazia)
