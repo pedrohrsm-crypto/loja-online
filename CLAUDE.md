@@ -53,10 +53,10 @@ Framework: v2.0 (https://github.com/pedrohrsm-crypto/framework-aprendido)
 - Toda frente cita, na seção "Áreas consultadas" do brief, a regra ou o checklist de cada área que ela toca.
 - O material das áreas é consulta: a decisão continua sendo do dono, registrada como issue `decisao`.
 
-## Análise (seção 13 §7 do framework; skill em `.claude/skills/analise/`)
+## Análise (seção 13 §7 do framework; a skill chega pelo framework anexado à sessão, não mora neste repositório)
 - Para analisar o projeto, use a skill `analise` ("rode a análise" ou `/analise [áreas]`): Desempenho, Revisão Textual, Agente Multidisciplinar, UX/UI, Segurança, DevOps e operação, Back-end/dados/runtime, Pagamentos e Privacidade/LGPD, cada uma com a sua matriz de referência (13 §2.4).
 - A rodada **propõe primeiro**, organizada por tema e só do escopo deste projeto. Issue, PR ou comentário, só depois do aceite do dono.
-- A matriz em `.claude/skills/analise/areas/` é cópia do framework: não edite. Entrada nova vai na tabela "Para a matriz" do relatório e sobe pelo funil; quem a leva ao framework, por PR, é o Maestro (18 §9).
+- A matriz de cada área mora no framework (`analistas/<área>/matriz.md`): não se copia para cá. Entrada nova vai na tabela "Para a matriz" do relatório e sobe pelo funil; quem a leva ao framework, por PR, é o Maestro (18 §9).
 
 ## Trabalho para cliente (seção 15 do framework; só se instalado com `--freelance`)
 - Nada se constrói antes da proposta aceita por escrito (`docs/freelance/PROPOSTA.md`). Mudança de escopo é pedido de mudança, com prazo e preço, antes de começar.
