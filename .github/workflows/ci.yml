@@ -28,17 +28,17 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - name: npm audit (alto ou crítico reprova; 04, erro 10.1)
         run: npm audit --audit-level=high
-      - name: Mensagens de commit do PR (convenção tipo(frente): texto (#issue))
+      - name: "Mensagens de commit do PR (convenção tipo(frente): texto (#issue))"
         if: github.event_name == 'pull_request'
         run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}
       - name: lint (exit 0 e saída vazia)
@@ -57,7 +57,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: e2e (suíte inteira, sobre o build acima)
         run: npx playwright test
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: relatorio-playwright
