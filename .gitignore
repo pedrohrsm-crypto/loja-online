@@ -46,3 +46,6 @@ test-results/
 
 # o exemplo documenta as variáveis e é lido pela guarda de ambiente: vai para o repositório
 !.env.example
+
+# caches de Python gerados pelos scripts dos analistas
+__pycache__/
