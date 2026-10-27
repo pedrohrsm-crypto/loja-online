@@ -79,7 +79,7 @@ A linha `Sessão: <min> min · tokens <in>/<out> · US$ <custo> · <modelo>` sai
 
 ## Desvios deste framework (motivo obrigatório)
 - **Sem `docs/PLANEJAMENTO.md` e `docs/CRONOGRAMA.md` próprios:** no PFA-F, as nove áreas foram respondidas na descoberta (`docs/freelance/DESCOBERTA.md` §8) e o cronograma está na proposta (`docs/freelance/PROPOSTA.md` §4). Os dois arquivos apontam para lá.
-- **Primeiro commit direto na `main`** (`be991ac`, só o README): repositório vazio não tem base para PR. Daí em diante, só por PR.
+- **Primeiro commit direto na `main`** (`a772d0a`, só o README): repositório vazio não tem base para PR. O repositório foi recriado em 27-Out, e o SHA é o do histórico novo. Daí em diante, só por PR.
 - **Node 24 em vez do 22 do starter:** a bancada está no 24, e o 02 do framework pede ≥ 22. Declarado no `.nvmrc`.
 - **Reconciliação de 15 min no GitHub Actions, não no cron da Vercel (a implementar na fatia de pagamentos):** o plano Hobby só aceita cron 1×/dia (doc da Vercel, conferida em 27-Out; risco #9). Até lá vale o cron diário do `vercel.json`.
 - **Kit instalado sem a análise e sem os módulos (equivale a `--sem-analise`):** as skills `analise`, `metodo` e `metodo-cartao`, os subagentes `analista-*` e `pm-*` e `docs/freelance/modulos/` trazem dados internos de projetos privados, e este repositório é público. Chegam pelo framework anexado à sessão. Foram publicados por engano na branch `front/dia-0` em 27-Out e retirados no mesmo dia.
