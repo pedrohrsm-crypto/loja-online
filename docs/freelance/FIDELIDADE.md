@@ -137,8 +137,25 @@ flowchart TD
 
 **Aprovado pelo cliente:** no aceite da proposta (`PROPOSTA.md` §9), em 2026-10-26, por escrito, na sessão do PM da loja (resposta do Pedro: "aceito, siga as recomendações nas 4").
 
-## 2. Média fidelidade — Dia 0
-Começa depois do aceite. Wireframes das 14 telas, mais a de não encontrado, com os três estados (carregando, vazio, erro), os estados próprios de cada tela listados no mapa e a largura de 360 px.
+## 2. Média fidelidade — Dia 0 (27-Out-2026)
+
+**O que vai:** wireframes em código (sem Figma, pedido de mudança nº 1) das 14 telas mais a de não encontrado, em cinza, com os textos da descoberta, os estados de cada tela, a moldura de 360 px e a troca de fonte para 140%.
+**Onde:** [`wireframes.html`](wireframes.html) neste diretório (abre em qualquer navegador; uma tela por item da lista, os estados nos botões acima da moldura).
+
+| Versão | Conferência | Resultado |
+|---|---|---|
+| 1 | UX/UI (`analista-ux-ui`) e Revisão Textual | ajustar antes: 10 achados de UX/UI (2 altos: código de 6 dígitos cortado a 140%; "Adicionar ao carrinho" abaixo da dobra) e 12 de texto (1 alto: Pix prometia "aprovação na hora") |
+| 2 | UX/UI (2ª passada, medida) | 6 resolvidos, 3 parciais e 5 novos, quase todos baixos; ajustar antes (alvos −/+ estreitos; navegação fora da vista) |
+| 3 | medição do PM com o mesmo script | 85 estados × 2 escalas: 0 transbordos, 0 alvos < 44 px, 68 de 68 ações principais visíveis sem rolar, navegação nunca fora da vista |
+
+### Conferência
+- [x] **UX/UI:** os três estados e a largura de 360 px em toda tela que lê dado (as estáticas têm o motivo na nota); alvos de 44 px nas duas dimensões; a ação principal visível sem rolar — achados M-UX-01 a M-UX-15, todos corrigidos na versão 3.
+- [x] **Revisão Textual:** textos da descoberta (nada de lorem ipsum), português do Brasil (0 variantes de Portugal), mensagens de erro que dizem o que fazer — achados M-TXT-01 a M-TXT-12, todos corrigidos na versão 2.
+- [x] Dono revisou: o PM conferiu cada correção contra os relatórios.
+
+**Fica para a alta fidelidade (Dia 1):** cores com contraste em todos os temas (as bordas do wireframe já têm 3:1), estilo de ação destrutiva distinto do primário de compra, e as validades do código e do link de senha, a conferir no Supabase Auth.
+
+**Aprovado pelo cliente em:** <data e meio> · A construção só começa depois desta linha.
 
 ## 3. Alta fidelidade — Dia 1
 Telas principais propostas: **4 Produto**, **5 Carrinho**, **7 Pagamento (Pix, incluindo "em confirmação")** e **12 Admin pedidos**, que são as que vendem e as que a dona usa todo dia.
