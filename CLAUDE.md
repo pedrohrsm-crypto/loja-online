@@ -11,7 +11,7 @@ Framework: v2.0 (https://github.com/pedrohrsm-crypto/framework-aprendido)
 - Tratar o dono do produto por: "o senhor" (Pedro). O Pedro também faz o papel do cliente no aceite.
 
 ## Stack e versões
-- Framework: Next.js 16 (`next` 16.3.7) — **leia a doc instalada** (`node_modules/PACOTE/docs`) antes de usar qualquer API. A memória e o brief não são fonte.
+- Framework: Next.js 16 (`next` 16.4.3) — **leia a doc instalada** (`node_modules/PACOTE/docs`) antes de usar qualquer API. A memória e o brief não são fonte.
 - Node: **24**, declarado só no `.nvmrc`; o CI lê o arquivo e a Vercel precisa estar em 24.x. A mesma versão na bancada, no CI e em produção (04, 4.4).
 - Banco/Auth: Supabase · Pagamentos: **Mercado Pago** pela Orders API (Checkout Transparente, D-LO-5, #10); o código do Stripe herdado do starter é substituído na fatia de pagamentos · Hospedagem: Vercel
 
