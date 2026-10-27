@@ -136,7 +136,7 @@ body {
 
 <header class="topo">
   <h1>Média fidelidade · loja-online (Ateliê Alecrim)</h1>
-  <p><strong>Versão 3</strong>, com os 22 achados da primeira conferência e os 8 pontos abertos da segunda (UX/UI) corrigidos. Wireframes das 14 telas da baixa fidelidade mais a de não encontrado, em cinza, com os textos reais da descoberta e os estados de cada tela, na largura de 360 px. Para aprovar até qui 29-Out-2026. Nenhuma cor, foto ou fonte aqui é a final: isso é a alta fidelidade, no Dia 1.</p>
+  <p><strong>Versão 4, aprovada pelo cliente em 27-Out-2026</strong>, com o ajuste pedido na aprovação: o preço sai do balão de tamanho e muda ao escolher o tamanho. Wireframes das 14 telas da baixa fidelidade mais a de não encontrado, em cinza, com os textos reais da descoberta e os estados de cada tela, na largura de 360 px. Para aprovar até qui 29-Out-2026. Nenhuma cor, foto ou fonte aqui é a final: isso é a alta fidelidade, no Dia 1.</p>
   <div class="etiquetas"><span class="etiqueta">Cliente fictício</span><span class="etiqueta">Dados ilustrativos</span><span class="etiqueta">FIDELIDADE.md §2</span><span class="etiqueta">27-Out-2026</span></div>
 </header>
 
@@ -179,6 +179,17 @@ const painel = (ativo, html, rodape = '') => barraAdmin() + corpo(html) + (rodap
 const qtd = (n) => `<div class="w-qtd"><span class="w-chip" aria-label="Diminuir">−</span><b>${n}</b><span class="w-chip" aria-label="Aumentar">+</span><span class="w-chip">Remover</span></div>`;
 const passos = (feitos) => `<div class="w-passos">${['Pago', 'Em preparação', 'Enviado', 'Entregue'].map((p, i) => `<div class="w-passo ${i < feitos ? 'feito' : ''}"><i></i>${p}</div>`).join('')}</div>`;
 
+const PRECO_TAMANHO = { '90 g': 'R$ 22,00', '140 g': 'R$ 30,00' };
+const ESTOQUE_TAMANHO = { '90 g': 8, '140 g': 5 };
+// O preço mostrado é o da variação escolhida; o balão de tamanho mostra só o tamanho.
+const paginaProduto = (tam) => loja('Início', `<div class="w-img larga">foto do produto (1 de 3)</div><p class="w-titulo">Sabonete artesanal</p><p class="w-preco">${PRECO_TAMANHO[tam]}</p>
+      <p class="w-sub">Aroma</p><div class="w-chips"><span class="w-chip sel">Lavanda</span><span class="w-chip">Alecrim</span><span class="w-chip">Laranja-doce</span><span class="w-chip">Sem fragrância</span></div>
+      <p class="w-sub">Tamanho</p><div class="w-chips">${Object.keys(PRECO_TAMANHO).map((t) => `<span class="w-chip ${t === tam ? 'sel' : ''}">${t}</span>`).join('')}</div>
+      <p class="w-pequeno">${ESTOQUE_TAMANHO[tam]} em estoque</p>${campo('Frete para o CEP', '01310-100')}<p class="w-pequeno">Correios · R$ 30,00 · 4 a 9 dias úteis</p>
+      <p class="w-sub">Ingredientes (INCI)</p><p class="w-texto">Sodium Olivate, Sodium Cocoate, Aqua, Glycerin, Lavandula Angustifolia Oil.</p>
+      <p class="w-sub">Alérgenos da fragrância</p><p class="w-texto">Linalool, Limonene.</p>${btn('Tirar dúvida no WhatsApp', 'leve')}`, undefined,
+      acao(`<div class="w-linha"><span>Lavanda · ${tam}</span><span class="w-preco">${PRECO_TAMANHO[tam]}</span></div>${btn('Adicionar ao carrinho', 'primario')}`));
+
 // ---------- as telas ----------
 const TELAS = [
   { id: 'inicio', n: '1', grupo: 'Loja', nome: 'Início / catálogo', rota: '/', estados: {
@@ -206,18 +217,13 @@ const TELAS = [
   }, nota: ['Primeira a sair se o prazo apertar (DESCOBERTA §6): fica só o filtro por categoria.'] },
 
   { id: 'produto', n: '4', grupo: 'Loja', nome: 'Produto', rota: '/produto/[slug]', estados: {
-    'Normal': () => loja('Início', `<div class="w-img larga">foto do produto (1 de 3)</div><p class="w-titulo">Sabonete artesanal</p><p class="w-preco">R$ 22,00</p>
-      <p class="w-sub">Aroma</p><div class="w-chips"><span class="w-chip sel">Lavanda</span><span class="w-chip">Alecrim</span><span class="w-chip">Laranja-doce</span><span class="w-chip">Sem fragrância</span></div>
-      <p class="w-sub">Tamanho</p><div class="w-chips"><span class="w-chip sel">90 g</span><span class="w-chip">140 g · R$ 30,00</span></div>
-      <p class="w-pequeno">8 em estoque</p>${campo('Frete para o CEP', '01310-100')}<p class="w-pequeno">Correios · R$ 30,00 · 4 a 9 dias úteis</p>
-      <p class="w-sub">Ingredientes (INCI)</p><p class="w-texto">Sodium Olivate, Sodium Cocoate, Aqua, Glycerin, Lavandula Angustifolia Oil.</p>
-      <p class="w-sub">Alérgenos da fragrância</p><p class="w-texto">Linalool, Limonene.</p>${btn('Tirar dúvida no WhatsApp', 'leve')}`, undefined,
-      acao(`<div class="w-linha"><span>Lavanda · 90 g</span><span class="w-preco">R$ 22,00</span></div>${btn('Adicionar ao carrinho', 'primario')}`)),
+    'Normal (90 g)': () => paginaProduto('90 g'),
+    '140 g selecionado': () => paginaProduto('140 g'),
     'Carregando': () => loja('Início', esqueleto(1) + '<div class="w-esq"></div><div class="w-esq meio"></div>'),
     'Esgotado': () => loja('Início', `<div class="w-img larga">foto do produto</div><p class="w-titulo">Sabonete artesanal</p><p class="w-preco">R$ 30,00</p><div class="w-chips"><span class="w-chip sel">Lavanda</span><span class="w-chip">Alecrim</span></div><div class="w-chips"><span class="w-chip">90 g</span><span class="w-chip sel off">140 g</span></div>${aviso('Lavanda 140 g esgotado', 'A lavanda de 90 g está disponível.', 'atencao')}`, undefined, acao(btn('Ver lavanda 90 g', 'primario'))),
     'Indisponível': () => loja('Início', vazio('Este produto não está mais à venda', 'Ele saiu do catálogo. Veja outros sabonetes da casa.', 'Ver sabonetes')),
     'Erro': () => loja('Início', erroCarga('este produto')),
-  }, nota: ['O botão de compra fica numa barra fixa com o preço da variação escolhida (M-UX-02).', 'Ingredientes e alérgenos em destaque (I-01).', 'Link antigo de post do Instagram cai em "Indisponível" (A-09).'] },
+  }, nota: ['O balão de tamanho mostra só o tamanho; ao escolher 140 g, o preço do produto e o da barra passam para R$ 30,00 (pedido do cliente na aprovação, 27-Out).', 'O botão de compra fica numa barra fixa com o preço da variação escolhida (M-UX-02).', 'Ingredientes e alérgenos em destaque (I-01).', 'Link antigo de post do Instagram cai em "Indisponível" (A-09).'] },
 
   { id: 'carrinho', n: '5', grupo: 'Loja', nome: 'Carrinho', rota: '/carrinho', estados: {
     'Com itens': () => loja('Carrinho', `<p class="w-titulo">Carrinho</p>

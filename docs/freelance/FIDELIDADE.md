@@ -147,6 +147,7 @@ flowchart TD
 | 1 | UX/UI (`analista-ux-ui`) e Revisão Textual | ajustar antes: 10 achados de UX/UI (2 altos: código de 6 dígitos cortado a 140%; "Adicionar ao carrinho" abaixo da dobra) e 12 de texto (1 alto: Pix prometia "aprovação na hora") |
 | 2 | UX/UI (2ª passada, medida) | 6 resolvidos, 3 parciais e 5 novos, quase todos baixos; ajustar antes (alvos −/+ estreitos; navegação fora da vista) |
 | 3 | medição do PM com o mesmo script | 85 estados × 2 escalas: 0 transbordos, 0 alvos < 44 px, 68 de 68 ações principais visíveis sem rolar, navegação nunca fora da vista |
+| 4 | ajuste pedido pelo cliente na aprovação | o balão de tamanho mostra só o tamanho ("140 g"); ao escolher 140 g, o preço do produto e o da barra de compra passam para R$ 30,00. Conferido na página: 90 g → R$ 22,00; 140 g → R$ 30,00 |
 
 ### Conferência
 - [x] **UX/UI:** os três estados e a largura de 360 px em toda tela que lê dado (as estáticas têm o motivo na nota); alvos de 44 px nas duas dimensões; a ação principal visível sem rolar — achados M-UX-01 a M-UX-15, todos corrigidos na versão 3.
@@ -155,7 +156,7 @@ flowchart TD
 
 **Fica para a alta fidelidade (Dia 1):** cores com contraste em todos os temas (as bordas do wireframe já têm 3:1), estilo de ação destrutiva distinto do primário de compra, e as validades do código e do link de senha, a conferir no Supabase Auth.
 
-**Aprovado pelo cliente em:** <data e meio> · A construção só começa depois desta linha.
+**Aprovado pelo cliente em:** 27-Out-2026, por escrito na sessão do PM ("De resto, aprovo"), com o ajuste do preço no balão de tamanho, feito na versão 4. A construção pode começar.
 
 ## 3. Alta fidelidade — Dia 1
 Telas principais propostas: **4 Produto**, **5 Carrinho**, **7 Pagamento (Pix, incluindo "em confirmação")** e **12 Admin pedidos**, que são as que vendem e as que a dona usa todo dia.
