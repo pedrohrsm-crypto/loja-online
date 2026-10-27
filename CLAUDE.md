@@ -41,6 +41,7 @@ Framework: v2.0 (https://github.com/pedrohrsm-crypto/framework-aprendido)
 - Todo número citado vem de um comando rodado, com data e SHA.
 - `npm ci`, nunca `npm install`.
 - Commit no formato `tipo(frente): texto (#issue)` — o tipo (`feat`, `fix`, `docs`…) alimenta as métricas; a issue dá rastreabilidade.
+- Nenhum identificador de modelo em arquivo, commit ou PR, nem na linha `Co-Authored-By` (Pedro, 27-Out). Os commits anteriores ficam como estão, para não reescrever o histórico.
 - Nada entra na `main` sem PR, sem os checks verdes e sem o veredito `aprovar` do `pm-revisor`.
 
 ## Método (seção 18 §8 do framework; skill `metodo`)
