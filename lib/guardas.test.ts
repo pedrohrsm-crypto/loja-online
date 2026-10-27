@@ -21,7 +21,7 @@ const FONTES = arquivos().map((f) => ({ arquivo: relative(RAIZ, f), texto: readF
 
 describe('catracas', () => {
   it('nenhuma cor hex fora de app/globals.css (toda cor vem de token)', () => {
-    // Cor hex tem pelo menos uma letra (#fff, #1f4fd1); referência de issue (#204) só tem dígitos.
+    // Cor hex tem pelo menos uma letra (#fff, #1f4fd1); referência de issue (#12) só tem dígitos.
     const HEX = /#(?=[0-9]*[a-f])[0-9a-f]{3}(?:[0-9a-f]{3})?(?![\w-])/i;
     const achados = FONTES.filter((f) => f.arquivo !== 'app/globals.css' && HEX.test(f.texto.replace(/#conteudo/g, '')));
     expect(achados.map((a) => a.arquivo)).toEqual([]);
