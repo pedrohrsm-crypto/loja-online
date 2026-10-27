@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Framework Aprendido (lições, erros e checklists)
+    url: https://github.com/pedrohrsm-crypto/framework-aprendido
+    about: Consulte o catálogo de erros (04) antes de abrir uma issue nova.
