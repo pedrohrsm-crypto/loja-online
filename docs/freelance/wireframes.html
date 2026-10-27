@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wireframes Ateliê Alecrim</title>
+<style>
+/* Layout: lista das 15 telas à esquerda (ou seletor no celular), uma moldura de 360 px no centro,
+   estados da tela como fichas acima dela. Wireframe em cinza; a moldura nunca recebe cor de marca. */
+:root {
+  --fundo: #f3f4f2;
+  --superficie: #ffffff;
+  --texto: #1f2421;
+  --suave: #5c645f;
+  --linha: #c9cec9;
+  --bloco: #e2e6e2;
+  --bloco-forte: #858c86;
+  --destaque: #2f5d4e;
+  --destaque-texto: #ffffff;
+  --alerta: #8a4b12;
+  --erro: #a32d2d;
+  --fonte: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --escala: 1;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --fundo: #161917; --superficie: #202421; --texto: #e7ebe8; --suave: #a3aba6; --linha: #3d443f;
+    --bloco: #2c312d; --bloco-forte: #727b74; --destaque: #8fc4b0; --destaque-texto: #10201a;
+    --alerta: #e0a86a; --erro: #f08a8a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --fundo: #161917; --superficie: #202421; --texto: #e7ebe8; --suave: #a3aba6; --linha: #3d443f;
+  --bloco: #2c312d; --bloco-forte: #727b74; --destaque: #8fc4b0; --destaque-texto: #10201a;
+  --alerta: #e0a86a; --erro: #f08a8a; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--fundo); color: var(--texto); font-family: var(--fonte); font-size: 0.9375rem; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 1.25rem 3rem;
+}
+.topo { max-width: 72rem; margin: 0 auto 1.25rem; display: grid; gap: 0.5rem; }
+.topo h1 { font-size: 1.375rem; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+.topo p { margin: 0; color: var(--suave); max-width: 65ch; }
+.etiquetas { display: flex; flex-wrap: wrap; gap: 0.375rem; font-size: 0.8125rem; }
+.etiqueta { border: 1px solid var(--linha); border-radius: 999px; padding: 0.125rem 0.625rem; color: var(--suave); background: var(--superficie); }
+.grade { max-width: 72rem; margin: 0 auto; display: grid; grid-template-columns: 15rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+@media (max-width: 52rem) { .grade { grid-template-columns: minmax(0, 1fr); } .lista { display: none; } .seletor { display: block !important; } }
+.lista { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 1rem); display: grid; gap: 0.125rem; }
+.lista h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--suave); margin: 0.75rem 0 0.25rem; }
+.lista a { color: var(--texto); text-decoration: none; padding: 0.375rem 0.625rem; border-radius: 0.375rem; display: flex; gap: 0.5rem; }
+.lista a span { color: var(--suave); font-family: var(--mono); font-size: 0.8125rem; min-width: 1.5rem; font-variant-numeric: tabular-nums; }
+.lista a[aria-current="page"] { background: var(--superficie); outline: 1px solid var(--linha); font-weight: 600; }
+.lista a:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--destaque); outline-offset: 2px; }
+.seletor { display: none; margin-bottom: 0.75rem; }
+.seletor select { width: 100%; font: inherit; padding: 0.5rem; border-radius: 0.375rem; border: 1px solid var(--linha); background: var(--superficie); color: var(--texto); }
+.palco { display: grid; gap: 0.875rem; min-width: 0; }
+.cabeca-tela { display: grid; gap: 0.25rem; }
+.cabeca-tela h2 { margin: 0; font-size: 1.125rem; }
+.cabeca-tela .rota { font-family: var(--mono); font-size: 0.8125rem; color: var(--suave); overflow-wrap: anywhere; }
+.estados, .controles { display: flex; flex-wrap: wrap; gap: 0.375rem; align-items: center; }
+.estados button, .controles button {
+  font: inherit; font-size: 0.8125rem; border: 1px solid var(--linha); background: var(--superficie); color: var(--texto);
+  border-radius: 999px; padding: 0.25rem 0.75rem; cursor: pointer; min-height: 2rem;
+}
+.estados button[aria-pressed="true"], .controles button[aria-pressed="true"] { background: var(--destaque); color: var(--destaque-texto); border-color: var(--destaque); }
+.controles { font-size: 0.8125rem; color: var(--suave); }
+.molduras { display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: flex-start; }
+.nota { max-width: 22rem; font-size: 0.875rem; color: var(--suave); display: grid; gap: 0.5rem; }
+.nota h3 { margin: 0; font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--texto); }
+.nota ul { margin: 0; padding-left: 1.1rem; display: grid; gap: 0.25rem; }
+
+/* ===== Moldura do celular: 360 px, wireframe em cinza ===== */
+.cel { width: 360px; max-width: 100%; border: 1px solid var(--bloco-forte); border-radius: 1.25rem; background: var(--superficie); overflow: hidden; }
+/* A moldura rola por dentro (640 px de altura de tela), para a barra de ação ficar presa embaixo como no celular. */
+.cel-tela { max-height: 640px; overflow-y: auto; }
+.cel-tela { font-size: calc(14px * var(--escala)); min-height: 640px; display: flex; flex-direction: column; }
+.w-barra { display: flex; justify-content: space-between; align-items: center; padding: 0.75em 1em; border-bottom: 1px solid var(--linha); gap: 0.5em; }
+.w-logo { font-weight: 700; letter-spacing: 0.02em; }
+.w-corpo { padding: 1em; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.875em; flex: 1; align-content: start; }
+.w-corpo > * { min-width: 0; }
+.w-nav { position: sticky; bottom: 0; background: var(--superficie); display: grid; grid-template-columns: repeat(var(--n, 5), 1fr); border-top: 1px solid var(--linha); font-size: 0.75em; text-align: center; }
+.w-nav div { padding: 0.75em 0.25em; min-height: 44px; display: grid; place-items: center; color: var(--suave); }
+.w-nav div.ativo { color: var(--texto); font-weight: 700; box-shadow: inset 0 2px 0 var(--texto); }
+.w-img { background: repeating-linear-gradient(45deg, var(--bloco), var(--bloco) 6px, transparent 6px, transparent 12px); border: 1px solid var(--linha); border-radius: 0.375em; display: grid; place-items: center; color: var(--suave); font-size: 0.75em; aspect-ratio: 1; }
+.w-img.larga { aspect-ratio: 16 / 10; }
+.w-titulo { font-size: 1.25em; font-weight: 700; margin: 0; line-height: 1.25; }
+.w-sub { font-size: 1.05em; font-weight: 600; margin: 0; }
+.w-texto { margin: 0; color: var(--suave); }
+.w-preco { font-weight: 700; font-variant-numeric: tabular-nums; }
+.w-btn { min-height: 44px; border: 1.5px solid var(--texto); border-radius: 0.5em; display: grid; place-items: center; font-weight: 600; padding: 0 1em; text-align: center; }
+.w-btn.primario { background: var(--texto); color: var(--superficie); }
+.w-btn.leve { border-color: var(--bloco-forte); color: var(--suave); }
+.w-btn.perigo { border-color: var(--erro); color: var(--erro); background: transparent; }
+.w-dupla { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5em; }
+.w-campo { display: grid; gap: 0.25em; }
+.w-campo label { font-size: 0.85em; font-weight: 600; }
+.w-campo .entrada { min-height: 44px; border: 1px solid var(--bloco-forte); border-radius: 0.375em; padding: 0 0.75em; display: flex; align-items: center; color: var(--texto); }
+.w-campo .entrada.vazia { color: var(--suave); }
+.w-campo.erro .entrada { border: 2px solid var(--erro); }
+.w-campo .msg { font-size: 0.85em; color: var(--erro); }
+.w-chips { display: flex; flex-wrap: wrap; gap: 0.375em; }
+.w-chip { border: 1px solid var(--bloco-forte); border-radius: 999px; padding: 0.25em 0.75em; min-height: 44px; min-width: 44px; justify-content: center; display: inline-flex; align-items: center; font-size: 0.9em; }
+.w-chip.sel { border: 2px solid var(--texto); font-weight: 700; }
+.w-chip.off { color: var(--suave); text-decoration: line-through; }
+.w-grade2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75em; }
+.w-card { border: 1px solid var(--linha); border-radius: 0.5em; padding: 0.75em; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.375em; }
+.w-qtd { display: flex; align-items: center; gap: 0.375em; }
+.w-qtd b { min-width: 2em; text-align: center; font-variant-numeric: tabular-nums; }
+.w-linha { display: flex; justify-content: space-between; gap: 0.75em; align-items: baseline; }
+.w-linha > :first-child { min-width: 0; }
+.w-sep { border: 0; border-top: 1px solid var(--linha); margin: 0; width: 100%; }
+.w-aviso { border: 1px solid var(--bloco-forte); border-left-width: 4px; border-radius: 0.375em; padding: 0.625em 0.75em; display: grid; gap: 0.25em; }
+.w-aviso.erro { border-left-color: var(--erro); }
+.w-aviso.atencao { border-left-color: var(--alerta); }
+.w-aviso strong { font-size: 0.95em; }
+.w-esq { background: var(--bloco); border-radius: 0.375em; height: 1em; }
+.w-esq.alto { height: 9em; }
+.w-esq.meio { width: 60%; }
+.w-vazio { display: grid; gap: 0.75em; justify-items: center; text-align: center; padding: 2em 0.5em; }
+.w-vazio .icone { width: 3.5em; height: 3.5em; border-radius: 50%; background: var(--bloco); }
+.w-tag { font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border: 1px solid var(--bloco-forte); border-radius: 0.25em; padding: 0.125em 0.375em; display: inline-block; }
+.w-passos { display: grid; gap: 0.375em; }
+.w-passo { display: flex; gap: 0.5em; align-items: center; }
+.w-passo i { width: 0.9em; height: 0.9em; border-radius: 50%; border: 2px solid var(--bloco-forte); flex: none; }
+.w-passo.feito i { background: var(--texto); border-color: var(--texto); }
+.w-qr { width: 12em; height: 12em; margin: 0 auto; border: 1px solid var(--bloco-forte); background:
+  repeating-linear-gradient(0deg, var(--bloco-forte) 0 8px, transparent 8px 16px),
+  repeating-linear-gradient(90deg, var(--bloco) 0 8px, transparent 8px 16px); }
+.w-codigo { display: flex; gap: 0.375em; justify-content: center; }
+.w-codigo span { flex: 1 1 0; max-width: 2.5em; min-width: 0; height: 3em; border: 1px solid var(--bloco-forte); border-radius: 0.375em; display: grid; place-items: center; font-family: var(--mono); font-size: 1.1em; }
+.w-mono { font-family: var(--mono); font-size: 0.85em; overflow-wrap: anywhere; }
+.w-pequeno { font-size: 0.85em; color: var(--suave); margin: 0; }
+.w-flutua { position: sticky; bottom: 0; margin-top: auto; padding: 0.75em 1em; border-top: 1px solid var(--linha); background: var(--superficie); display: grid; gap: 0.5em; }
+@media (prefers-reduced-motion: no-preference) { .w-esq { animation: pulsa 1.4s ease-in-out infinite; } }
+@keyframes pulsa { 50% { opacity: 0.5; } }
+</style>
+
+<header class="topo">
+  <h1>Média fidelidade · loja-online (Ateliê Alecrim)</h1>
+  <p><strong>Versão 4, aprovada pelo cliente em 27-Out-2026</strong>, com o ajuste pedido na aprovação: o preço sai do balão de tamanho e muda ao escolher o tamanho. Wireframes das 14 telas da baixa fidelidade mais a de não encontrado, em cinza, com os textos reais da descoberta e os estados de cada tela, na largura de 360 px. Nenhuma cor, foto ou fonte aqui é a final: isso é a alta fidelidade, no Dia 1.</p>
+  <div class="etiquetas"><span class="etiqueta">Cliente fictício</span><span class="etiqueta">Dados ilustrativos</span><span class="etiqueta">FIDELIDADE.md §2</span><span class="etiqueta">27-Out-2026</span></div>
+</header>
+
+<div class="grade">
+  <nav class="lista" id="lista" aria-label="Telas"></nav>
+  <main class="palco">
+    <div class="seletor"><label for="seletor-tela" class="w-pequeno">Tela</label><select id="seletor-tela"></select></div>
+    <div class="cabeca-tela"><h2 id="nome-tela"></h2><div class="rota" id="rota-tela"></div></div>
+    <div class="estados" id="estados" role="group" aria-label="Estados da tela"></div>
+    <div class="controles" role="group" aria-label="Escala da fonte">Fonte:
+      <button type="button" id="escala-100" aria-pressed="true">100%</button>
+      <button type="button" id="escala-140" aria-pressed="false">140%</button>
+    </div>
+    <div class="molduras">
+      <div class="cel"><div class="cel-tela" id="tela"></div></div>
+      <aside class="nota" id="nota"></aside>
+    </div>
+  </main>
+</div>
+
+<script>
+// ---------- peças do wireframe ----------
+const barra = (dir = 'Carrinho (3)') => `<div class="w-barra"><span class="w-logo">Ateliê Alecrim</span><span class="w-pequeno">${dir}</span></div>`;
+const navLoja = (ativo) => `<div class="w-nav" style="--n:5">${['Início', 'Categorias', 'Busca', 'Carrinho', 'Conta'].map((n) => `<div class="${n === ativo ? 'ativo' : ''}">${n}</div>`).join('')}</div>`;
+const navAdmin = (ativo) => `<div class="w-nav" style="--n:3">${['Pedidos', 'Produtos', 'Fretes'].map((n) => `<div class="${n === ativo ? 'ativo' : ''}">${n}</div>`).join('')}</div>`;
+const barraAdmin = () => `<div class="w-barra"><span class="w-logo">Painel · Ateliê Alecrim</span><span class="w-pequeno">Ver loja</span></div>`;
+const btn = (t, tipo = '') => `<div class="w-btn ${tipo}">${t}</div>`;
+const chips = (...l) => `<div class="w-chips">${l.map((c) => `<span class="w-chip">${c}</span>`).join('')}</div>`;
+const campo = (rotulo, valor, erro) => `<div class="w-campo ${erro ? 'erro' : ''}"><label>${rotulo}</label><div class="entrada ${valor ? '' : 'vazia'}">${valor || 'Digite aqui'}</div>${erro ? `<div class="msg">${erro}</div>` : ''}</div>`;
+const aviso = (titulo, texto, tipo = '') => `<div class="w-aviso ${tipo}"><strong>${titulo}</strong><span class="w-pequeno">${texto}</span></div>`;
+const vazio = (titulo, texto, acao) => `<div class="w-vazio"><div class="icone"></div><p class="w-sub">${titulo}</p><p class="w-texto">${texto}</p>${acao ? btn(acao) : ''}</div>`;
+const esqueleto = (n = 3) => Array.from({ length: n }, () => '<div class="w-esq alto"></div><div class="w-esq"></div><div class="w-esq meio"></div>').join('');
+const LOJA_SEGURA = 'Os itens do seu carrinho continuam salvos.';
+const erroCarga = (o, extra = LOJA_SEGURA) => aviso(`Não foi possível carregar ${o}.`, `Confira a sua conexão e tente de novo. ${extra}`, 'erro') + btn('Tentar de novo');
+const card = (nome, preco, extra = '') => `<div class="w-card"><div class="w-img">foto</div><span>${nome}</span><span class="w-preco">${preco}</span>${extra}</div>`;
+const corpo = (html) => `<div class="w-corpo">${html}</div>`;
+const acao = (html) => `<div class="w-flutua">${html}</div>`;
+const loja = (ativo, html, dir, rodape = '') => barra(dir) + corpo(html) + (rodape || navLoja(ativo));
+const painel = (ativo, html, rodape = '') => barraAdmin() + corpo(html) + (rodape || navAdmin(ativo));
+const qtd = (n) => `<div class="w-qtd"><span class="w-chip" aria-label="Diminuir">−</span><b>${n}</b><span class="w-chip" aria-label="Aumentar">+</span><span class="w-chip">Remover</span></div>`;
+const passos = (feitos) => `<div class="w-passos">${['Pago', 'Em preparação', 'Enviado', 'Entregue'].map((p, i) => `<div class="w-passo ${i < feitos ? 'feito' : ''}"><i></i>${p}</div>`).join('')}</div>`;
+
+const PRECO_TAMANHO = { '90 g': 'R$ 22,00', '140 g': 'R$ 30,00' };
+const ESTOQUE_TAMANHO = { '90 g': 8, '140 g': 5 };
+// O preço mostrado é o da variação escolhida; o balão de tamanho mostra só o tamanho.
+const paginaProduto = (tam) => loja('Início', `<div class="w-img larga">foto do produto (1 de 3)</div><p class="w-titulo">Sabonete artesanal</p><p class="w-preco">${PRECO_TAMANHO[tam]}</p>
+      <p class="w-sub">Aroma</p><div class="w-chips"><span class="w-chip sel">Lavanda</span><span class="w-chip">Alecrim</span><span class="w-chip">Laranja-doce</span><span class="w-chip">Sem fragrância</span></div>
+      <p class="w-sub">Tamanho</p><div class="w-chips">${Object.keys(PRECO_TAMANHO).map((t) => `<span class="w-chip ${t === tam ? 'sel' : ''}">${t}</span>`).join('')}</div>
+      <p class="w-pequeno">${ESTOQUE_TAMANHO[tam]} em estoque</p>${campo('Frete para o CEP', '01310-100')}<p class="w-pequeno">Correios · R$ 30,00 · 4 a 9 dias úteis</p>
+      <p class="w-sub">Ingredientes (INCI)</p><p class="w-texto">Sodium Olivate, Sodium Cocoate, Aqua, Glycerin, Lavandula Angustifolia Oil.</p>
+      <p class="w-sub">Alérgenos da fragrância</p><p class="w-texto">Linalool, Limonene.</p>${btn('Tirar dúvida no WhatsApp', 'leve')}`, undefined,
+      acao(`<div class="w-linha"><span>Lavanda · ${tam}</span><span class="w-preco">${PRECO_TAMANHO[tam]}</span></div>${btn('Adicionar ao carrinho', 'primario')}`));
+
+// ---------- as telas ----------
+const TELAS = [
+  { id: 'inicio', n: '1', grupo: 'Loja', nome: 'Início / catálogo', rota: '/', estados: {
+    'Normal': () => loja('Início', `<div class="w-img larga">foto da coleção</div><p class="w-titulo">Cosméticos feitos à mão, em pequenos lotes</p><p class="w-texto">Sabonetes, velas, hidratantes e óleos com a lista completa de ingredientes em cada produto.</p>
+      <p class="w-sub">Categorias</p>${chips('Sabonetes', 'Velas', 'Hidratantes', 'Óleos', 'Kits')}
+      <p class="w-sub">Mais vendidos</p><div class="w-grade2">${card('Sabonete artesanal · 4 aromas', 'a partir de R$ 20,00')}${card('Vela aromática · 3 aromas', 'a partir de R$ 45,00')}${card('Hidratante de laranja-doce', 'R$ 48,00')}${card('Kit presente', 'R$ 120,00')}</div>`),
+    'Carregando': () => loja('Início', esqueleto(2)),
+    'Vazio': () => loja('Início', vazio('A loja abre em breve', 'Ainda não há produtos publicados. Enquanto isso, fale com a gente pelo WhatsApp.', 'Falar no WhatsApp')),
+    'Erro': () => loja('Início', erroCarga('o catálogo')),
+  }, nota: ['O frete pelo CEP aparece já no produto e no carrinho (prospecto I-02).', 'Barra inferior com 5 destinos, presa embaixo, igual no desktop (FIDELIDADE §1).', 'Regra: nas telas com barra de ação (produto, carrinho, entrega, pagamento, edição e detalhe no painel), a barra de ação toma o lugar da navegação (M-UX-11).', 'Bordas de campo e de chip com contraste de pelo menos 3:1 nos dois temas (M-UX-14).'] },
+
+  { id: 'categoria', n: '2', grupo: 'Loja', nome: 'Categorias e categoria', rota: '/categorias · /categoria/[slug]', estados: {
+    'Categorias': () => loja('Categorias', `<p class="w-titulo">Categorias</p>${['Sabonetes · 12 produtos', 'Velas · 8 produtos', 'Hidratantes · 7 produtos', 'Óleos · 6 produtos', 'Kits · 5 produtos'].map((c) => `<div class="w-card"><div class="w-linha"><span>${c}</span><span>›</span></div></div>`).join('')}`),
+    'Categoria': () => loja('Categorias', `<p class="w-titulo">Sabonetes</p><div class="w-chips"><span class="w-chip sel">Todos</span><span class="w-chip">Sem fragrância</span></div><div class="w-grade2">${card('Sabonete artesanal · 4 aromas', 'a partir de R$ 20,00')}${card('Sabonete de argila', 'R$ 26,00')}${card('Sabonete esfoliante de café', 'R$ 26,00')}${card('Sabonete líquido de alecrim', 'R$ 38,00')}</div>`),
+    'Carregando': () => loja('Categorias', esqueleto(2)),
+    'Vazio': () => loja('Categorias', `<p class="w-titulo">Velas</p>` + vazio('Nenhuma vela disponível agora', 'O próximo lote sai em breve. Veja os sabonetes enquanto isso.', 'Ver sabonetes')),
+    'Erro': () => loja('Categorias', erroCarga('esta categoria')),
+  }, nota: ['Filtro "sem fragrância" para o comprador de pele sensível (prospecto I-01).'] },
+
+  { id: 'busca', n: '3', grupo: 'Loja', nome: 'Busca', rota: '/busca?q=', estados: {
+    'Resultados': () => loja('Busca', `${campo('Buscar', 'lavanda')}<p class="w-pequeno">3 produtos com "lavanda"</p><div class="w-grade2">${card('Sabonete artesanal · lavanda', 'a partir de R$ 22,00')}${card('Vela aromática · lavanda', 'a partir de R$ 45,00')}${card('Óleo corporal de lavanda', 'R$ 52,00')}</div>`),
+    'Carregando': () => loja('Busca', campo('Buscar', 'lavanda') + esqueleto(1)),
+    'Vazio': () => loja('Busca', campo('Buscar', 'patchouli') + vazio('Nada encontrado para "patchouli"', 'Tente outro aroma ou navegue pelas categorias.', 'Ver categorias')),
+    'Erro': () => loja('Busca', campo('Buscar', 'lavanda') + erroCarga('a busca')),
+  }, nota: ['Primeira a sair se o prazo apertar (DESCOBERTA §6): fica só o filtro por categoria.'] },
+
+  { id: 'produto', n: '4', grupo: 'Loja', nome: 'Produto', rota: '/produto/[slug]', estados: {
+    'Normal (90 g)': () => paginaProduto('90 g'),
+    '140 g selecionado': () => paginaProduto('140 g'),
+    'Carregando': () => loja('Início', esqueleto(1) + '<div class="w-esq"></div><div class="w-esq meio"></div>'),
+    'Esgotado': () => loja('Início', `<div class="w-img larga">foto do produto</div><p class="w-titulo">Sabonete artesanal</p><p class="w-preco">R$ 30,00</p><div class="w-chips"><span class="w-chip sel">Lavanda</span><span class="w-chip">Alecrim</span></div><div class="w-chips"><span class="w-chip">90 g</span><span class="w-chip sel off">140 g</span></div>${aviso('Lavanda 140 g esgotado', 'A lavanda de 90 g está disponível.', 'atencao')}`, undefined, acao(btn('Ver lavanda 90 g', 'primario'))),
+    'Indisponível': () => loja('Início', vazio('Este produto não está mais à venda', 'Ele saiu do catálogo. Veja outros sabonetes da casa.', 'Ver sabonetes')),
+    'Erro': () => loja('Início', erroCarga('este produto')),
+  }, nota: ['O balão de tamanho mostra só o tamanho; ao escolher 140 g, o preço do produto e o da barra passam para R$ 30,00 (pedido do cliente na aprovação, 27-Out).', 'O botão de compra fica numa barra fixa com o preço da variação escolhida (M-UX-02).', 'Ingredientes e alérgenos em destaque (I-01).', 'Link antigo de post do Instagram cai em "Indisponível" (A-09).'] },
+
+  { id: 'carrinho', n: '5', grupo: 'Loja', nome: 'Carrinho', rota: '/carrinho', estados: {
+    'Com itens': () => loja('Carrinho', `<p class="w-titulo">Carrinho</p>
+      <div class="w-card"><div class="w-linha"><span>Sabonete artesanal · lavanda · 90 g</span><span class="w-preco">R$ 44,00</span></div>${qtd(2)}</div>
+      <div class="w-card"><div class="w-linha"><span>Vela aromática · alecrim · 150 g</span><span class="w-preco">R$ 45,00</span></div>${qtd(1)}</div>
+      ${campo('CEP para o frete', '01310-100')}<div class="w-linha"><span>Subtotal (3 itens)</span><span class="w-preco">R$ 89,00</span></div><div class="w-linha"><span>Frete (Correios)</span><span class="w-preco">R$ 30,00</span></div>`, undefined,
+      acao(`<div class="w-linha"><strong>Total</strong><span class="w-preco">R$ 119,00</span></div>${btn('Finalizar compra', 'primario')}`)),
+    'Vazio': () => loja('Carrinho', vazio('Seu carrinho está vazio', 'Escolha um aroma para começar.', 'Ver produtos') + chips('Sabonetes', 'Velas', 'Kits'), 'Carrinho (0)'),
+    'Item esgotou': () => loja('Carrinho', `<p class="w-titulo">Carrinho</p>${aviso('Um item mudou desde que você o adicionou', 'A vela de alecrim 150 g esgotou. O sabonete de lavanda 90 g passou de R$ 20,00 para R$ 22,00.', 'atencao')}
+      <div class="w-card"><div class="w-linha"><span>Vela aromática · alecrim · 150 g</span><span class="w-tag">Esgotado</span></div>${chips('Remover', 'Ver alecrim 300 g')}</div>
+      <div class="w-card"><div class="w-linha"><span>Sabonete artesanal · lavanda · 90 g</span><span class="w-preco">R$ 44,00</span></div><p class="w-pequeno">2 × R$ 22,00 (antes R$ 20,00)</p></div>`, undefined, acao(btn('Continuar com o que está disponível', 'primario'))),
+    'Carregando': () => loja('Carrinho', esqueleto(1)),
+    'Erro': () => loja('Carrinho', erroCarga('o carrinho', 'Seus itens continuam salvos neste celular.')),
+  }, nota: ['O carrinho só é esvaziado quando o pagamento é confirmado (A-07).', 'Esgotado ou preço mudado volta aqui, com a linha marcada (A-03).', 'Os itens contam unidades em todas as telas (3 itens).'] },
+
+  { id: 'checkout', n: '6', grupo: 'Loja', nome: 'Entrega', rota: '/checkout', estados: {
+    'Correios': () => barra('Entrega') + corpo(`<p class="w-titulo">Entrega</p>${campo('CEP', '01310-100')}<p class="w-pequeno">São Paulo, SP · região "Sudeste e Sul"</p>
+      <div class="w-card"><div class="w-linha"><span>● Correios · 4 a 9 dias úteis</span><span class="w-preco">R$ 30,00</span></div></div>
+      ${campo('Endereço', 'Av. Paulista, 1000, ap. 12')}${campo('Quem recebe', 'Ana Exemplo')}${campo('WhatsApp para contato', '(11) 90000-0000')}
+      <div class="w-linha"><span>3 itens</span><span class="w-preco">R$ 89,00</span></div>`) + acao(`<div class="w-linha"><strong>Total</strong><span class="w-preco">R$ 119,00</span></div>${btn('Ir para o pagamento', 'primario')}`),
+    'Mesma cidade': () => barra('Entrega') + corpo(`<p class="w-titulo">Entrega</p>${campo('CEP', '30130-010')}<p class="w-pequeno">Mesma cidade e região metropolitana</p>
+      <div class="w-card"><div class="w-linha"><span>○ Motoboy · 1 a 2 dias úteis</span><span class="w-preco">R$ 15,00</span></div></div>
+      <div class="w-card" style="border-width:2px"><div class="w-linha"><span>● Retirada no ateliê</span><span class="w-preco">grátis</span></div><p class="w-pequeno">Combinamos o dia e o horário pelo WhatsApp depois do pagamento e passamos o endereço por lá.</p></div>
+      ${campo('WhatsApp para combinar', '(31) 90000-0000')}`) + acao(btn('Ir para o pagamento', 'primario')),
+    'Calculando': () => barra('Entrega') + corpo(`<p class="w-titulo">Entrega</p>${campo('CEP', '01310-100')}<div class="w-esq"></div><div class="w-esq meio"></div>`),
+    'CEP inválido': () => barra('Entrega') + corpo(`<p class="w-titulo">Entrega</p>${campo('CEP', '0131', 'CEP incompleto. Digite os 8 números.')}`),
+    'Erro ao criar pedido': () => barra('Entrega') + corpo(`<p class="w-titulo">Entrega</p>${aviso('Não deu para criar o pedido', 'Nada foi cobrado. Tente de novo; se continuar, fale com a gente pelo WhatsApp.', 'erro')}`) + acao(btn('Tentar de novo', 'primario')),
+  }, nota: ['O CEP digitado no carrinho chega preenchido (A-02).', 'Modo de entrega conforme o CEP; na retirada, sem endereço (A-08). O endereço do ateliê nunca aparece no site (S-08).', 'O total é recalculado no servidor (regra 3 da FIDELIDADE §1); isso não aparece para o comprador.'] },
+
+  { id: 'pagamento', n: '7', grupo: 'Loja', nome: 'Pagamento', rota: '/checkout/pagamento/[pedido]', estados: {
+    'Escolher meio': () => barra('Pagamento') + corpo(`<p class="w-titulo">Pagamento</p><p class="w-pequeno">Pedido nº 1042 · R$ 119,00</p>
+      <div class="w-card" style="border-width:2px"><div class="w-linha"><span>● Pix</span><span class="w-tag">confirmação em instantes</span></div></div><div class="w-card"><span>○ Cartão de crédito · até 6x (com juros a partir de 2x)</span></div>
+      <p class="w-pequeno">Pagamento processado pelo Mercado Pago. A loja não vê nem guarda os dados do seu cartão.</p><p class="w-pequeno">Ateliê Alecrim · CNPJ 00.000.000/0001-00 (fictício) · Devolução em até 7 dias após receber</p>`) + acao(btn('Gerar Pix', 'primario')),
+    'Gerando Pix': () => barra('Pagamento') + corpo(`<p class="w-titulo">Gerando o seu Pix</p><div class="w-esq alto"></div><div class="w-esq"></div>`),
+    'Pix aguardando': () => barra('Pagamento') + corpo(`<p class="w-titulo">Pague com Pix</p><p class="w-preco">R$ 119,00 · expira em <strong>29:41</strong></p><div class="w-qr" role="img" aria-label="QR code do Pix"></div>
+      <div class="w-card"><span class="w-mono">00020126580014br.gov.bcb.pix…5204000053039865406119.00</span></div><p class="w-pequeno">Esta página atualiza sozinha quando o pagamento chegar. Também enviamos o código para o seu e-mail.</p>`) + acao(btn('Copiar código Pix', 'primario')),
+    'Em confirmação': () => barra('Pagamento') + corpo(vazio('Estamos confirmando seu pagamento', 'Isso costuma levar menos de 1 minuto. Não pague de novo: esta página atualiza sozinha.', '') + `<div class="w-esq"></div>${btn('Falar no WhatsApp (pedido nº 1042)', 'leve')}`),
+    'Cartão': () => barra('Pagamento') + corpo(`<p class="w-titulo">Cartão de crédito</p><div class="w-aviso"><strong>Formulário do Mercado Pago</strong><span class="w-pequeno">Número, validade, código e titular são digitados no formulário seguro do Mercado Pago.</span></div>${campo('Parcelas', '1x de R$ 119,00 sem juros')}<p class="w-pequeno">De 2x a 6x, com juros do Mercado Pago, mostrados antes de pagar.</p>`) + acao(btn('Pagar R$ 119,00', 'primario')),
+    'Recusado': () => barra('Pagamento') + corpo(`<p class="w-titulo">Cartão recusado</p>${aviso('O banco recusou o pagamento', 'Nada foi cobrado. Confira os dados ou use outro cartão. Com Pix, a confirmação costuma sair em menos de 1 minuto.', 'erro')}${btn('Pagar com Pix')}`) + acao(btn('Tentar outro cartão', 'primario')),
+    'Expirado': () => barra('Pagamento') + corpo(`<p class="w-titulo">O Pix expirou</p><p class="w-texto">O prazo de 30 minutos acabou.</p>${aviso('Você já pagou?', 'Se pagou, espere alguns minutos: vamos confirmar e avisar por e-mail. Não pague de novo.', 'atencao')}${btn('Já paguei: acompanhar o pedido', 'primario')}${btn('Não paguei: tentar de novo')}`),
+    'Erro ao gerar': () => barra('Pagamento') + corpo(`<p class="w-titulo">Pagamento</p>${aviso('Não foi possível gerar o pagamento', 'Nada foi cobrado. Tente de novo em instantes; se continuar, fale com a gente pelo WhatsApp.', 'erro')}`) + acao(btn('Tentar de novo', 'primario')),
+    'Pedido cancelado': () => barra('Pagamento') + corpo(vazio('Este pedido foi cancelado', 'O prazo de pagamento do pedido nº 1044 acabou e os itens voltaram para a loja. Monte o carrinho de novo para comprar.', 'Montar o carrinho de novo')),
+    'Pedido já pago': () => barra('Pagamento') + corpo(vazio('Este pedido já foi pago', 'O pagamento do pedido nº 1042 já foi confirmado. Não é preciso pagar de novo.', 'Ver o pedido')),
+  }, nota: ['Estado "em confirmação" e a pergunta "Já pagou?" antes do retry (A-05).', 'Chega também do e-mail do pedido e do "Pagar agora" (A-04); pedido pago ou cancelado não reabre o pagamento (S-01).', 'O selo do Pix promete "em instantes", não "na hora" (M-TXT-01).'] },
+
+  { id: 'pedido', n: '8', grupo: 'Loja', nome: 'Pedido', rota: '/pedido/[id]', estados: {
+    'Pago': () => loja('Conta', `<p class="w-titulo">Pedido nº 1042</p><p class="w-texto">Recebemos seu pagamento. Enviamos a confirmação para ana@exemplo.com.</p>${passos(1)}
+      <div class="w-card"><div class="w-linha"><span>2 × Sabonete artesanal · lavanda · 90 g</span><span class="w-preco">R$ 44,00</span></div><div class="w-linha"><span>1 × Vela aromática · alecrim · 150 g</span><span class="w-preco">R$ 45,00</span></div><div class="w-linha"><span>Frete (Correios)</span><span class="w-preco">R$ 30,00</span></div></div>${btn('Precisa de ajuda? WhatsApp', 'leve')}`),
+    'Enviado': () => loja('Conta', `<p class="w-titulo">Pedido nº 1042</p>${passos(3)}<div class="w-card"><span>Código de rastreio dos Correios</span><span class="w-mono">AA123456789BR</span></div>`),
+    'Motoboy': () => loja('Conta', `<p class="w-titulo">Pedido nº 1046</p><p class="w-texto">Pago. Agora é só combinar a entrega.</p>${btn('Combinar entrega no WhatsApp', 'primario')}<p class="w-pequeno">A mensagem já leva o número do pedido.</p>`),
+    'Aberto': () => loja('Conta', `<p class="w-titulo">Pedido nº 1044</p>${aviso('Aguardando pagamento', 'O Pix gerado vale até 14:32.', 'atencao')}${btn('Pagar agora', 'primario')}`),
+    'Carregando': () => loja('Conta', esqueleto(1)),
+    'Erro': () => loja('Conta', erroCarga('o pedido')),
+  }, nota: ['Só abre com login; pedido de outra pessoa responde "não encontrado" (S-06).', 'O comprador vê "Em preparação"; "Separado" fica só no painel (M-TXT-10).'] },
+
+  { id: 'entrar', n: '9', grupo: 'Loja', nome: 'Entrar e criar conta', rota: '/entrar · /entrar/nova-senha', estados: {
+    'Entrar': () => barra('') + corpo(`<p class="w-titulo">Entrar</p><p class="w-texto">Para acompanhar pedidos e finalizar a compra. O seu carrinho continua salvo.</p>${campo('E-mail', '')}${campo('Senha', '')}${btn('Entrar', 'primario')}${btn('Esqueci a senha', 'leve')}${btn('Criar conta', 'leve')}`),
+    'Criar conta': () => barra('') + corpo(`<p class="w-titulo">Criar conta</p>${campo('Nome', 'Ana Exemplo')}${campo('E-mail', 'ana@exemplo.com')}${campo('Senha (mínimo 8 caracteres)', '••••••••')}${btn('Criar conta', 'primario')}<p class="w-pequeno">Ao criar a conta, você concorda com os Termos e a Política de privacidade.</p>`),
+    'Código': () => barra('') + corpo(`<p class="w-titulo">Confirme seu e-mail</p><p class="w-texto">Enviamos um código de 6 números para ana@exemplo.com. Digite aqui mesmo, sem sair desta página.</p><div class="w-codigo"><span>4</span><span>8</span><span>1</span><span></span><span></span><span></span></div>${btn('Confirmar', 'primario')}<p class="w-pequeno">Não chegou? Reenviar em 0:45</p>`),
+    'Código inválido': () => barra('') + corpo(`<p class="w-titulo">Confirme seu e-mail</p>${aviso('Código incorreto ou vencido', 'Confira os 6 números ou peça um código novo. Cada código vale por 10 minutos.', 'erro')}<div class="w-codigo"><span>4</span><span>8</span><span>1</span><span>0</span><span>0</span><span>9</span></div>${btn('Confirmar', 'primario')}${btn('Enviar código novo', 'leve')}`),
+    'Recuperar senha': () => barra('') + corpo(`<p class="w-titulo">Recuperar senha</p>${campo('E-mail', 'ana@exemplo.com')}${btn('Enviar link', 'primario')}<p class="w-pequeno">Se houver uma conta com esse e-mail, você vai receber o link em alguns minutos.</p>`),
+    'Nova senha': () => barra('') + corpo(`<p class="w-titulo">Defina a nova senha</p>${campo('Nova senha', '')}${campo('Repita a senha', '')}${btn('Salvar e entrar', 'primario')}`),
+    'Link expirado': () => barra('') + corpo(vazio('Este link expirou', 'Por segurança, o link de nova senha vale por 1 hora. Peça outro.', 'Enviar novo link')),
+    'Erro': () => barra('') + corpo(`<p class="w-titulo">Entrar</p>${aviso('E-mail ou senha incorretos', 'Confira e tente de novo, ou recupere a senha.', 'erro')}${campo('E-mail', 'ana@exemplo.com')}${campo('Senha', '', 'Digite a senha de novo.')}${btn('Entrar', 'primario')}`),
+    'Dona: autenticador': () => barra('') + corpo(`<p class="w-titulo">Código do autenticador</p><p class="w-texto">Abra o aplicativo autenticador do seu celular e digite os 6 números do Ateliê Alecrim.</p><div class="w-codigo"><span>2</span><span>7</span><span></span><span></span><span></span><span></span></div>${btn('Entrar no painel', 'primario')}`),
+    'Dona: ativar autenticador': () => barra('') + corpo(`<p class="w-titulo">Proteja o painel</p><p class="w-texto">Como o painel faz estornos, ele pede um segundo código. Leia o QR com um aplicativo autenticador e digite o código que aparecer.</p><div class="w-qr" role="img" aria-label="QR code do autenticador"></div>${campo('Código de 6 números', '')}`) + acao(btn('Ativar e entrar', 'primario')),
+    'Dona: código errado': () => barra('') + corpo(`<p class="w-titulo">Código do autenticador</p>${aviso('Código incorreto', 'Confira o horário do celular e digite o código que aparece agora. Ele muda a cada 30 segundos.', 'erro')}<div class="w-codigo"><span>2</span><span>7</span><span>4</span><span>1</span><span>9</span><span>0</span></div>`) + acao(btn('Entrar no painel', 'primario')),
+  }, nota: ['Código de 6 dígitos na mesma tela (D-LO-6, #11).', 'A dona entra com segundo fator (regra 1 da FIDELIDADE §1; M-UX-06).', 'Recuperação responde igual para e-mail com ou sem conta (S-07).', 'Validade do código e do link: a conferir no Supabase Auth no Dia 1.'] },
+
+  { id: 'conta', n: '10', grupo: 'Loja', nome: 'Minha conta', rota: '/conta', estados: {
+    'Normal': () => loja('Conta', `<p class="w-titulo">Olá, Ana</p><p class="w-sub">Meus pedidos</p>
+      <div class="w-card"><div class="w-linha"><span>Nº 1044 · 27-Out</span><span class="w-tag">Aguardando pagamento</span></div><span class="w-preco">R$ 48,00</span>${btn('Pagar agora', 'primario')}</div>
+      <div class="w-card"><div class="w-linha"><span>Nº 1042 · 27-Out</span><span class="w-tag">Pago</span></div><span class="w-preco">R$ 119,00</span></div><div class="w-card"><div class="w-linha"><span>Nº 0987 · 02-Out</span><span class="w-tag">Entregue</span></div><span class="w-preco">R$ 67,00</span></div>
+      <p class="w-sub">Meus dados</p><p class="w-pequeno">Nome, e-mail e WhatsApp</p>${btn('Editar meus dados', 'leve')}${btn('Baixar meus dados', 'leve')}${btn('Excluir minha conta', 'leve')}${btn('Sair', 'leve')}`),
+    'Vazio': () => loja('Conta', `<p class="w-titulo">Olá, Ana</p>` + vazio('Você ainda não fez pedidos', 'Quando comprar, o pedido aparece aqui.', 'Ver produtos')),
+    'Baixar dados': () => loja('Conta', `<p class="w-titulo">Baixar meus dados</p><p class="w-texto">Vamos gerar um arquivo com seus dados e pedidos. Por segurança, confirme sua senha.</p>${campo('Senha', '')}${btn('Gerar arquivo', 'primario')}`),
+    'Excluir': () => loja('Conta', `<p class="w-titulo">Excluir conta</p>${aviso('Você tem 1 pedido em andamento', 'Nº 1042 ainda não foi entregue. Se excluir agora, não conseguiremos falar com você sobre a entrega.', 'atencao')}<p class="w-texto">Apagamos seus dados pessoais. Os registros de venda ficam sem o seu nome, como manda a lei.</p>${campo('Confirme sua senha', '')}`, undefined, acao(`<div class="w-dupla">${btn('Cancelar')}${btn('Excluir minha conta', 'perigo')}</div>`)),
+    'Carregando': () => loja('Conta', esqueleto(1)),
+    'Erro': () => loja('Conta', erroCarga('sua conta')),
+  }, nota: ['Pedido aguardando pagamento com "Pagar agora" (A-04, M-UX-05).', 'Excluir e baixar os dados pedem a senha de novo (S-09).'] },
+
+  { id: 'institucionais', n: '11', grupo: 'Loja', nome: 'Institucionais', rota: '/sobre · /trocas · /ajuda · /privacidade · /termos', estados: {
+    'Trocas': () => loja('Conta', `<p class="w-titulo">Trocas e devoluções</p><p class="w-texto">Você pode desistir da compra em até 7 dias depois de receber, e devolvemos o valor total.</p><p class="w-sub">Chegou quebrado ou vazando?</p><p class="w-texto">Mande uma foto pelo WhatsApp em até 48 horas. Enviamos outro sem custo.</p><p class="w-texto">Produto aberto ou usado só é trocado se tiver defeito.</p>${btn('Falar no WhatsApp', 'leve')}`),
+    'Perguntas frequentes': () => loja('Conta', `<p class="w-titulo">Perguntas frequentes</p>${['Qual o prazo e o valor do frete para minha cidade?', 'Serve para pele sensível? Tem o ingrediente X?', 'Quanto tempo dura o sabonete ou a vela?', 'Posso retirar no ateliê?', 'Vocês fazem kit para presente?'].map((q) => `<div class="w-card"><div class="w-linha"><span>${q}</span><span>+</span></div></div>`).join('')}`),
+    'Privacidade': () => loja('Conta', `<p class="w-titulo">Política de privacidade</p><p class="w-texto">Usamos nome, e-mail, WhatsApp e endereço só para entregar o seu pedido e falar com você sobre ele.</p><p class="w-texto">Quem recebe esses dados para nos ajudar: Mercado Pago (pagamento), Supabase (banco de dados), Vercel (hospedagem) e o provedor de e-mail.</p><p class="w-texto">Você pode baixar ou apagar seus dados na sua conta.</p>`),
+    'Termos': () => loja('Conta', `<p class="w-titulo">Termos de uso</p><p class="w-texto">Quem vende: Ateliê Alecrim, CNPJ 00.000.000/0001-00 (fictício).</p><p class="w-texto">Preços, frete e prazos valem no momento da compra. O pedido é confirmado quando o pagamento é aprovado.</p><p class="w-texto">Trocas e devoluções seguem a página de trocas e o Código de Defesa do Consumidor.</p>`),
+    'Sobre': () => loja('Conta', `<div class="w-img larga">foto do ateliê</div><p class="w-titulo">Sobre o ateliê</p><p class="w-texto">Cosméticos feitos à mão em pequenos lotes, numa cozinha adaptada, há 3 anos.</p><p class="w-pequeno">Contato: atendimento@exemplo.com · WhatsApp (00) 90000-0000 · Resposta em até 1 dia útil</p>`),
+  }, nota: ['O FAQ são as 5 perguntas que a dona mais ouve (DESCOBERTA §5b).', 'Páginas estáticas: não têm carregando, vazio nem erro de dado.', 'Textos de política e termos: modelo para a dona revisar; não é aconselhamento jurídico.'] },
+
+  { id: 'admin-pedidos', n: '12', grupo: 'Painel da dona', nome: 'Pedidos e detalhe', rota: '/admin/pedidos · /admin/pedidos/[id]', estados: {
+    'Lista': () => painel('Pedidos', `<p class="w-titulo">Pedidos</p><div class="w-chips"><span class="w-chip sel">Pagos (3)</span><span class="w-chip">Em preparação</span><span class="w-chip">Enviados</span><span class="w-chip">Todos</span></div>
+      ${[['1042', 'Ana E.', 'R$ 119,00', 'Correios'], ['1043', 'Bruno E.', 'R$ 60,00', 'Motoboy'], ['1045', 'Carla E.', 'R$ 45,00', 'Retirada']].map(([n, q, v, m]) => `<div class="w-card"><div class="w-linha"><strong>Nº ${n}</strong><span class="w-preco">${v}</span></div><span class="w-pequeno">${q} · ${m} · pago há 2 h</span></div>`).join('')}`),
+    'Detalhe': () => painel('Pedidos', `<p class="w-titulo">Pedido nº 1042</p><span class="w-tag">Pago</span><div class="w-card"><span>2 × Sabonete artesanal · lavanda · 90 g</span><span>1 × Vela aromática · alecrim · 150 g</span></div><div class="w-card"><span>Ana Exemplo · (11) 90000-0000</span><span class="w-pequeno">Av. Paulista, 1000, ap. 12 · 01310-100 · Correios</span></div><p class="w-pequeno">Pix · Mercado Pago · R$ 119,00</p>${btn('Estornar pagamento', 'leve')}`, acao(btn('Marcar como separado', 'primario'))),
+    'Enviar com rastreio': () => painel('Pedidos', `<p class="w-titulo">Pedido nº 1042</p><span class="w-tag">Separado</span>${campo('Código de rastreio dos Correios', 'AA123456789BR')}<p class="w-pequeno">O comprador recebe o código por e-mail.</p>`, acao(btn('Marcar como enviado', 'primario'))),
+    'Rastreio inválido': () => painel('Pedidos', `<p class="w-titulo">Pedido nº 1042</p>${campo('Código de rastreio dos Correios', 'AA1234', 'O código tem 2 letras, 9 números e BR. Exemplo: AA123456789BR.')}`, acao(btn('Marcar como enviado', 'primario'))),
+    'Detalhe retirada': () => painel('Pedidos', `<p class="w-titulo">Pedido nº 1045</p><span class="w-tag">Pago</span><div class="w-card"><span>1 × Vela aromática · lavanda · 150 g</span></div><div class="w-card"><span>Carla Exemplo · (31) 90000-0000</span><span class="w-pequeno">Retirada no ateliê · combinar pelo WhatsApp</span></div>${btn('Combinar retirada no WhatsApp', 'leve')}`, acao(btn('Marcar como entregue', 'primario'))),
+    'Estornar': () => painel('Pedidos', `<p class="w-titulo">Estornar o pedido nº 1042?</p>${aviso('O valor total de R$ 119,00 volta para quem pagou', 'No Pix, cai na conta de quem pagou. Esta ação não pode ser desfeita.', 'atencao')}${campo('Motivo', 'Desistência em 7 dias')}${chips('☐ O produto ainda não foi enviado (volta ao estoque)')}`, acao(`<div class="w-dupla">${btn('Cancelar')}${btn('Sim, estornar R$ 119,00', 'perigo')}</div>`)),
+    'Vazio': () => painel('Pedidos', `<p class="w-titulo">Pedidos</p>` + vazio('Nenhum pedido pago esperando', 'Quando entrar um, você recebe um e-mail com o link.', '')),
+    'Carregando': () => painel('Pedidos', esqueleto(2)),
+    'Erro': () => painel('Pedidos', erroCarga('os pedidos', 'Nenhum pedido foi alterado.')),
+  }, nota: ['Lista em cartões no celular, pagos primeiro (A-01).', 'Envio com rastreio e detalhe de retirada (M-UX-08).', 'Estorno com confirmação dupla e motivo (I-10). A dona só faz separado → enviado → entregue (S-03).'] },
+
+  { id: 'admin-produtos', n: '13', grupo: 'Painel da dona', nome: 'Produtos e estoque', rota: '/admin/produtos · /admin/produtos/[id]', estados: {
+    'Lista': () => painel('Produtos', `<div class="w-linha"><p class="w-titulo">Produtos</p>${chips('+ Novo')}</div>${[['Sabonete artesanal', '8 variações · 2 esgotadas', 'Publicado'], ['Vela aromática', '6 variações · todas com estoque', 'Publicado'], ['Óleo de calêndula', '1 variação · 12 em estoque', 'Rascunho']].map(([n, e, s]) => `<div class="w-card"><div class="w-linha"><strong>${n}</strong><span class="w-tag">${s}</span></div><span class="w-pequeno">${e}</span></div>`).join('')}`),
+    'Editar': () => painel('Produtos', `<p class="w-titulo">Sabonete artesanal</p>${chips('● Publicado', '○ Rascunho')}<p class="w-sub">Fotos</p><div class="w-grade2"><div class="w-img">foto 1</div><div class="w-img">foto 2</div></div>${chips('+ Foto', 'Mudar ordem', 'Remover')}${campo('Nome', 'Sabonete artesanal')}${campo('Categoria', 'Sabonetes')}${campo('Ingredientes (INCI)', 'Sodium Olivate, Sodium Cocoate, Aqua…')}${campo('Alérgenos da fragrância', 'Linalool, Limonene')}
+      <p class="w-sub">Variações (8)</p><div class="w-card"><div class="w-linha"><span>Lavanda · 90 g</span><span class="w-preco">R$ 22,00</span></div><div class="w-qtd"><span class="w-pequeno">Estoque</span><span class="w-chip">−</span><b>8</b><span class="w-chip">+</span></div></div><div class="w-card"><div class="w-linha"><span>Lavanda · 140 g</span><span class="w-preco">R$ 30,00</span></div><div class="w-qtd"><span class="w-pequeno">Estoque</span><span class="w-chip">−</span><b>0</b><span class="w-chip">+</span></div></div><p class="w-pequeno">e mais 6 variações</p>${btn('Pré-visualizar na loja', 'leve')}`, acao(btn('Salvar', 'primario'))),
+    'Vazio': () => painel('Produtos', `<p class="w-titulo">Produtos</p>` + vazio('Nenhum produto cadastrado', 'Comece pelo seu produto mais vendido.', 'Cadastrar produto')),
+    'Carregando': () => painel('Produtos', esqueleto(2)),
+    'Erro': () => painel('Produtos', erroCarga('os produtos', 'Nada foi alterado.')),
+    'Erro ao salvar': () => painel('Produtos', `<p class="w-titulo">Sabonete artesanal</p>${aviso('Não foi possível salvar', 'Corrija os campos marcados.', 'erro')}${campo('Preço da variação lavanda 140 g', '0,00', 'O preço precisa ser maior que zero.')}${campo('Estoque', '-1', 'O estoque não pode ser negativo.')}`, acao(btn('Salvar', 'primario'))),
+  }, nota: ['Os 38 produtos entram uma vez, pela planilha, no Dia 1; importar pelo painel fica fora (I-05).', 'Rascunho só aparece na pré-visualização da dona (S-03).', 'Fotos e publicar/rascunho no editor (M-UX-09).'] },
+
+  { id: 'admin-fretes', n: '14', grupo: 'Painel da dona', nome: 'Fretes por região', rota: '/admin/fretes', estados: {
+    'Normal': () => painel('Fretes', `<p class="w-titulo">Fretes por região</p>${[['Mesma cidade e região metropolitana', 'Motoboy · R$ 15,00 · 1 a 2 dias úteis'], ['Retirada no ateliê', 'Grátis · a combinar'], ['Restante do estado', 'Correios · R$ 25,00 · 3 a 7 dias úteis'], ['Sudeste e Sul', 'Correios · R$ 30,00 · 4 a 9 dias úteis'], ['Demais regiões', 'Correios · R$ 40,00 · 6 a 12 dias úteis']].map(([r, d]) => `<div class="w-card"><div class="w-linha"><strong>${r}</strong>${chips('Editar')}</div><span class="w-pequeno">${d}</span></div>`).join('')}`),
+    'Erro': () => painel('Fretes', erroCarga('os fretes', 'Nada foi alterado.')),
+    'Erro ao salvar': () => painel('Fretes', `<p class="w-titulo">Sudeste e Sul</p>${campo('Valor', 'R$ -5,00', 'O valor não pode ser negativo.')}${campo('Prazo', '4 a 9 dias úteis')}`, acao(btn('Salvar', 'primario'))),
+  }, nota: ['O endereço do ateliê não tem campo nenhum aqui (S-08).', 'Tabela pequena e fixa: sem estado vazio nem carregando longo.'] },
+
+  { id: 'nao-encontrado', n: '—', grupo: 'Comum', nome: 'Não encontrado', rota: 'qualquer rota inválida', estados: {
+    'Normal': () => loja('', vazio('Página não encontrada', 'O link pode estar errado ou a página saiu do ar.', 'Ir para o início'), ''),
+  }, nota: ['Também é a resposta para o /admin sem papel e para o pedido de outra pessoa (S-06).'] },
+];
+
+// ---------- navegação ----------
+const lista = document.getElementById('lista');
+const seletor = document.getElementById('seletor-tela');
+let grupoAtual = '';
+TELAS.forEach((t) => {
+  if (t.grupo !== grupoAtual) { grupoAtual = t.grupo; lista.insertAdjacentHTML('beforeend', `<h2>${t.grupo}</h2>`); }
+  lista.insertAdjacentHTML('beforeend', `<a href="#${t.id}" data-id="${t.id}"><span>${t.n}</span>${t.nome}</a>`);
+  seletor.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.n} · ${t.nome}</option>`);
+});
+let estadoAtual = {};
+function mostrar(id) {
+  const t = TELAS.find((x) => x.id === id) || TELAS[0];
+  document.getElementById('nome-tela').textContent = `${t.n === '—' ? '' : t.n + ' · '}${t.nome}`;
+  document.getElementById('rota-tela').textContent = t.rota;
+  lista.querySelectorAll('a').forEach((a) => { if (a.dataset.id === t.id) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  seletor.value = t.id;
+  const nomes = Object.keys(t.estados);
+  const atual = estadoAtual[t.id] && t.estados[estadoAtual[t.id]] ? estadoAtual[t.id] : nomes[0];
+  const est = document.getElementById('estados');
+  est.innerHTML = nomes.map((n) => `<button type="button" aria-pressed="${n === atual}" data-estado="${n}">${n}</button>`).join('');
+  est.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { estadoAtual[t.id] = b.dataset.estado; mostrar(t.id); }));
+  document.getElementById('tela').innerHTML = t.estados[atual]();
+  document.getElementById('nota').innerHTML = `<h3>Por que assim</h3><ul>${t.nota.map((x) => `<li>${x}</li>`).join('')}</ul><h3>Conferir</h3><ul><li>Os estados acima cobrem carregando, vazio e erro quando a tela lê dado.</li><li>Alvos de toque com pelo menos 44 px.</li><li>A ação principal aparece sem rolar a 360 px.</li><li>Troque a fonte para 140%: nada pode cortar.</li></ul>`;
+}
+function rotear() { mostrar((location.hash || '#inicio').slice(1)); }
+window.addEventListener('hashchange', rotear);
+seletor.addEventListener('change', () => { location.hash = seletor.value; });
+function escala(v) {
+  document.documentElement.style.setProperty('--escala', v);
+  document.getElementById('escala-100').setAttribute('aria-pressed', String(v === 1));
+  document.getElementById('escala-140').setAttribute('aria-pressed', String(v === 1.4));
+}
+document.getElementById('escala-100').addEventListener('click', () => escala(1));
+document.getElementById('escala-140').addEventListener('click', () => escala(1.4));
+rotear();
+</script>
