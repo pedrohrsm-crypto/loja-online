@@ -41,6 +41,7 @@ Framework: v2.0 (https://github.com/pedrohrsm-crypto/framework-aprendido)
 - Todo número citado vem de um comando rodado, com data e SHA.
 - `npm ci`, nunca `npm install`.
 - Commit no formato `tipo(frente): texto (#issue)` — o tipo (`feat`, `fix`, `docs`…) alimenta as métricas; a issue dá rastreabilidade.
+- Nenhum identificador de modelo em arquivo, commit ou PR, nem na linha `Co-Authored-By` (Pedro, 27-Out). Os commits anteriores ficam como estão, para não reescrever o histórico.
 - Nada entra na `main` sem PR, sem os checks verdes e sem o veredito `aprovar` do `pm-revisor`.
 
 ## Método (seção 18 §8 do framework; skill `metodo`)
@@ -83,4 +84,4 @@ A linha `Sessão: <min> min · tokens <in>/<out> · US$ <custo> · <modelo>` sai
 - **Node 24 em vez do 22 do starter:** a bancada está no 24, e o 02 do framework pede ≥ 22. Declarado no `.nvmrc`.
 - **Reconciliação de 15 min no GitHub Actions, não no cron da Vercel (a implementar na fatia de pagamentos):** o plano Hobby só aceita cron 1×/dia (doc da Vercel, conferida em 27-Out; risco #9). Até lá vale o cron diário do `vercel.json`.
 - **Kit instalado sem a análise e sem os módulos (equivale a `--sem-analise`):** as skills `analise`, `metodo` e `metodo-cartao`, os subagentes `analista-*` e `pm-*` e `docs/freelance/modulos/` trazem dados internos de projetos privados, e este repositório é público. Chegam pelo framework anexado à sessão. Foram publicados por engano na branch `front/dia-0` em 27-Out e retirados no mesmo dia.
-- **Sem proteção de branch criada pelo PM:** a sessão não tem ferramenta para isso; o Pedro liga em Settings → Branches (`docs/DIA_ZERO.md`).
+- **Proteção de branch criada pelo Pedro, não pelo PM:** a sessão não tem ferramenta para isso; o Pedro ligou em Settings → Branches em 27-Out. A regra não exige aprovação mínima, porque o GitHub não deixa o autor aprovar o próprio PR e o dono é o único usuário; o veredito do `pm-revisor` cumpre esse papel (`docs/DIA_ZERO.md`).

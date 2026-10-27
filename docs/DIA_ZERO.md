@@ -20,7 +20,7 @@ Portões medidos na bancada em 27-Out, Node 24.21, a partir de `npm ci` limpo: `
 - [ ] Parcial: `frente`, `risco` e `decisao` nasceram com as issues #1 a #11. As outras 8 nascem quando a primeira issue de cada tipo for aberta (sem `gh` nesta sessão)
 
 ## CI desde o primeiro commit (4.1)
-- [ ] **Falta com o Pedro** (a sessão não tem ferramenta para isso): Settings → Branches → regra para `main` com PR obrigatório e o check `portoes` obrigatório, depois do 1º CI verde (o check só aparece na lista depois de rodar uma vez)
+- [x] Proteção da `main`, criada pelo Pedro em 27-Out (a sessão não tem ferramenta para isso): PR obrigatório sem aprovação mínima (dono único; a revisão é do `pm-revisor`), check `portoes` obrigatório com a branch atualizada, conversas resolvidas, sem bypass para administrador, sem force push e sem exclusão
 - [x] commitlint no CI sobre os commits do PR
 - [x] Lint com `--silent` e saída vazia (o grep do starter reprovava sempre, por causa do `--max-warnings` do cabeçalho do npm; corrigido e visto falhar com um defeito plantado), typecheck, testes, bancada SQL, build e e2e da suíte inteira
 - [x] `TZ: UTC` no CI; nenhum pipe em portão

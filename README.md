@@ -4,7 +4,7 @@ Loja online de **cosméticos artesanais** para um cliente **fictício** (Ateliê
 
 É um MVP de portfólio feito pelo ciclo **PFA-F** do Framework Aprendido (entrega freelance: descoberta → proposta → Dia 0 → construção → endurecimento → aceite). Nenhum dado real de pessoa ou empresa; pagamentos só em modo de teste.
 
-> **Estado em 27-Out-2026: Dia 0.** O código ainda é o do starter (Next.js + Supabase, com o módulo de pagamento em Stripe). As telas da loja e a troca para o Mercado Pago entram depois da aprovação dos wireframes (`docs/freelance/FIDELIDADE.md` §2).
+> **Estado em 27-Out-2026: Dia 0.** O código ainda é o do starter (Next.js + Supabase, com o módulo de pagamento em Stripe). Os wireframes de média fidelidade foram aprovados em 27-Out (`docs/freelance/FIDELIDADE.md` §2); as telas da loja e a troca para o Mercado Pago começam no Dia 1 (3-Nov).
 
 ## Documentos do trabalho
 | Etapa | Documento |
