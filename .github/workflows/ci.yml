@@ -1,0 +1,61 @@
+name: CI
+
+# Os portões do framework, desde o primeiro commit (04, erro 4.1). Rodar separados, nunca com
+# `| tail` sem PIPESTATUS. Node 22 fixado aqui e na bancada. `npm ci`, nunca `npm install`.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  NEXT_PUBLIC_SUPABASE_URL: https://exemplo.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: anon-de-teste
+  TZ: UTC
+
+jobs:
+  portoes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Mensagens de commit do PR
+        if: github.event_name == 'pull_request'
+        run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}
+      - name: lint (exit 0 e saída vazia)
+        run: |
+          npm run lint > lint.txt 2>&1 || { cat lint.txt; exit 1; }
+          if grep -qE "warning|error" lint.txt; then cat lint.txt; exit 1; fi
+      - run: npm run typecheck
+      - run: npm test
+      - name: bancada SQL (migrations + ASSERT de privilégio + acesso cruzado)
+        run: npm run test:sql
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: e2e (suíte inteira, sobre o build acima)
+        run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: relatorio-playwright
+          path: playwright-report/
+          retention-days: 7

@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+/*
+ * Tokens de cor. Toda cor do produto vem daqui, com par em TODOS os temas (claro, escuro e
+ * o que o sistema pedir). A guarda lib/ui/tokens.test.ts confere que cada token existe nos
+ * dois blocos e que os pares de texto têm contraste mínimo (4,5:1; foco e borda 3:1).
+ * Tamanhos em rem: a interface precisa aguentar 140% de fonte (módulo Acessibilidade).
+ */
+:root {
+  --cor-fundo: #ffffff;
+  --cor-superficie: #f4f5f7;
+  --cor-texto: #16181d;
+  --cor-texto-suave: #4a5160;
+  --cor-borda: #767d8c;
+  --cor-primaria: #1f4fd1;
+  --cor-texto-na-primaria: #ffffff;
+  --cor-foco: #b3261e;
+  --cor-erro: #b3261e;
+  --cor-sucesso: #1e6b34;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) {
+    --cor-fundo: #111318;
+    --cor-superficie: #1c1f26;
+    --cor-texto: #eef0f4;
+    --cor-texto-suave: #b4bac6;
+    --cor-borda: #8a91a0;
+    --cor-primaria: #8fb0ff;
+    --cor-texto-na-primaria: #0b1220;
+    --cor-foco: #ffb4a8;
+    --cor-erro: #ffb4a8;
+    --cor-sucesso: #8fd9a0;
+  }
+}
+
+:root[data-tema="escuro"] {
+  --cor-fundo: #111318;
+  --cor-superficie: #1c1f26;
+  --cor-texto: #eef0f4;
+  --cor-texto-suave: #b4bac6;
+  --cor-borda: #8a91a0;
+  --cor-primaria: #8fb0ff;
+  --cor-texto-na-primaria: #0b1220;
+  --cor-foco: #ffb4a8;
+  --cor-erro: #ffb4a8;
+  --cor-sucesso: #8fd9a0;
+}
+
+@theme inline {
+  --color-fundo: var(--cor-fundo);
+  --color-superficie: var(--cor-superficie);
+  --color-texto: var(--cor-texto);
+  --color-texto-suave: var(--cor-texto-suave);
+  --color-borda: var(--cor-borda);
+  --color-primaria: var(--cor-primaria);
+  --color-texto-na-primaria: var(--cor-texto-na-primaria);
+  --color-foco: var(--cor-foco);
+  --color-erro: var(--cor-erro);
+  --color-sucesso: var(--cor-sucesso);
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html {
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+}
+
+body {
+  font-family: var(--font-sans);
+  line-height: 1.5;
+}
+
+/* Foco sempre visível, na cor de foco do tema, só para teclado. */
+:focus-visible {
+  outline: 0.1875rem solid var(--cor-foco);
+  outline-offset: 0.125rem;
+}
+
+.pular-para-conteudo {
+  position: absolute;
+  left: 0.5rem;
+  top: -10rem;
+  padding: 0.5rem 1rem;
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  z-index: 50;
+}
+.pular-para-conteudo:focus {
+  top: 0.5rem;
+}
