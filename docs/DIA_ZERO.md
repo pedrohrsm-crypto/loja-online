@@ -13,7 +13,7 @@ Portões medidos na bancada em 27-Out, Node 24.21, a partir de `npm ci` limpo: `
 
 ## Repositório e ambiente
 - [x] `CLAUDE.md` preenchido, sem `<…>` restante
-- [x] Node 24 só no `.nvmrc`; o CI lê `node-version-file`. **Falta com o Pedro:** conferir que o projeto da Vercel está em Node 24.x (Settings → Build and Deployment → Node.js Version)
+- [x] Node 24 só no `.nvmrc`; o CI lê `node-version-file`. O projeto `loja-online` da Vercel está em Node 24.x: o Pedro configurou em 27-Out, e o PM conferiu na API da Vercel no mesmo dia (`nodeVersion: 24.x`). Ainda não há deploy de produção pronto: o último deploy de produção aparece como `CANCELED` na mesma API (causa não conferida)
 - [x] Guarda em `lib/guardas.test.ts` ("toda variável de ambiente lida no código está no .env.example"); as variáveis do Mercado Pago entram na fatia de pagamentos
 - [ ] Não se aplica no porte curto: no máximo 2 frentes (15 §1, regra 5), sem script de worktree. Se abrir frente paralela, copiar o `.env.local` à mão e usar `npm ci`
 - [x] Não há pasta de maquete: a média fidelidade é feita em código, nas próprias rotas (alta fidelidade só em código, mudança nº 1)
