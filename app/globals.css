@@ -104,6 +104,9 @@ body {
   left: 0.5rem;
   top: -10rem;
   padding: 0.5rem 1rem;
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
   background: var(--cor-fundo);
   color: var(--cor-texto);
   z-index: 50;
