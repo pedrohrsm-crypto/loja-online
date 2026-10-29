@@ -43,6 +43,19 @@ describe('escolherFretes', () => {
   });
 });
 
+describe('faixas de teste', () => {
+  it('são as mesmas da carga fictícia (supabase/seed/catalogo.sql), campo a campo', () => {
+    const seed = readFileSync(join(__dirname, '..', '..', 'supabase', 'seed', 'catalogo.sql'), 'utf8');
+    const LINHA = /\('([^']+)', '(\d{8})', '(\d{8})', '(\w+)', (\d+), '([^']+)'\)/g;
+    const daCarga = [...seed.matchAll(LINHA)].map(([, nome, cepInicio, cepFim, modo, valor, prazoTexto]) => ({
+      nome, cepInicio, cepFim, modo, valorCentavos: Number(valor), prazoTexto,
+    }));
+    const ordem = (a: { modo: string; cepInicio: string }, b: { modo: string; cepInicio: string }) =>
+      a.modo.localeCompare(b.modo) || a.cepInicio.localeCompare(b.cepInicio);
+    expect(daCarga.sort(ordem)).toEqual([...FAIXAS].sort(ordem));
+  });
+});
+
 describe('modos de frete', () => {
   it('o CHECK de fretes_regiao.modo na migration tem exatamente MODOS_FRETE', () => {
     const pasta = join(__dirname, '..', '..', 'supabase', 'migrations');

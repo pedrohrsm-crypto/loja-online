@@ -90,6 +90,10 @@ create policy produtos_ler_publicados on public.produtos
   for select to anon, authenticated using (
     publicado and exists (select 1 from public.categorias c where c.id = categoria_id and c.publicado)
   );
+-- `p.publicado and c.publicado` repete de propósito a policy de produtos: hoje a subconsulta
+-- já passa pela RLS de produtos (que exige os dois), então tirar um deles não muda o que anon
+-- vê. A repetição segura a regra se a policy de produtos mudar; a bancada confere o texto
+-- da policy (05_catalogo_politicas.sql), porque o comportamento sozinho não reprova.
 create policy variacoes_ler_publicadas on public.variacoes
   for select to anon, authenticated using (
     publicado and exists (
@@ -115,7 +119,7 @@ begin
       assert not has_table_privilege(papel, tabela, 'delete'), format('%s apaga %s', papel, tabela);
       assert not has_table_privilege(papel, tabela, 'truncate'), format('%s esvazia %s', papel, tabela);
       assert not has_table_privilege(papel, tabela, 'trigger'), format('%s cria trigger em %s', papel, tabela);
-      assert not has_table_privilege(papel, tabela, 'references'), format('%s referencia %s', papel, tabela);
+      assert not has_any_column_privilege(papel, tabela, 'references'), format('%s referencia %s', papel, tabela);
     end loop;
   end loop;
 
