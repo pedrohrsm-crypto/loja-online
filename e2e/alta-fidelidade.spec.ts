@@ -229,12 +229,25 @@ test.describe('Carrinho', () => {
     await expect(page.getByText('Um item mudou desde que você o adicionou')).toBeVisible();
     await expect(page.getByText(/Só 7 unidades disponíveis, e o carrinho tem 9/)).toBeVisible();
     await expect(page.getByTestId('barra-total')).toContainText(/R\$\s154,00/); // 7 × R$ 22,00, não 9
+    // a linha, o subtotal e o rótulo contam as mesmas 7 unidades
+    await expect(page.getByRole('listitem').filter({ hasText: 'Sabonete artesanal · laranja-doce · 90 g' }).getByText(/^R\$\s154,00$/)).toBeVisible();
+    await expect(page.getByText('Subtotal (7 itens)')).toBeVisible();
+    await expect(page.locator('dl')).toContainText(/R\$\s154,00/);
     await expect(page.getByRole('button', { name: 'Finalizar compra' })).toHaveCount(0);
     expect(await axe(page)).toEqual([]);
     await page.getByRole('button', { name: 'Continuar com o que está disponível' }).click();
     await expect(page.getByText('Um item mudou desde que você o adicionou')).toHaveCount(0);
     await expect(page.getByRole('button', { name: /Aumentar a quantidade/ })).toBeDisabled();
     await expect(page.getByRole('button', { name: 'Finalizar compra' })).toBeVisible();
+  });
+
+  test('acima do estoque e preço mudado ao mesmo tempo: os dois avisos e o preço de hoje', async ({ page }) => {
+    await semearCarrinho(page, [{ ...ITEM_ALECRIM, variacaoId: 'v-lar-90', aroma: 'laranja-doce', precoCentavos: 2000, quantidade: 9 }]);
+    await page.goto('/carrinho');
+    await expect(page.getByText(/Só 7 unidades disponíveis, e o carrinho tem 9/)).toBeVisible();
+    await expect(page.getByText(/7 × R\$\s22,00 \(antes R\$\s20,00\)/)).toBeVisible();
+    await expect(page.getByRole('listitem').filter({ hasText: 'laranja-doce · 90 g' }).getByText(/^R\$\s154,00$/)).toBeVisible();
+    await expect(page.getByText('Subtotal (7 itens)')).toBeVisible();
   });
 
   test('catálogo fora do ar: mantém os itens e avisa que não conferiu', async ({ page }) => {

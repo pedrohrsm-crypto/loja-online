@@ -8,7 +8,7 @@ import { formatarPreco } from '@/lib/catalogo/preco';
 import type { FreteRegiao } from '@/lib/catalogo/tipos';
 import { conferirCarrinho, type ResultadoConferencia } from '@/lib/loja/acoes';
 import {
-  continuarComDisponiveis, contarUnidades, definirQuantidade, QUANTIDADE_MAXIMA, remover,
+  continuarComDisponiveis, contarUnidades, definirQuantidade, linhaEfetiva, QUANTIDADE_MAXIMA, remover,
   situacaoDoItem, subtotalCentavos, tetoDoItem, type Situacao,
 } from '@/lib/loja/carrinho';
 import { gravarCarrinho, useCarrinho } from '@/lib/loja/carrinho-armazenamento';
@@ -65,7 +65,7 @@ export function CarrinhoVista() {
   const comProblema = situacoes.some((s) => s.tipo !== 'ok');
   const subtotal = subtotalCentavos(itens, atuais);
   const total = subtotal + (frete?.valorCentavos ?? 0);
-  const unidades = contarUnidades(itens);
+  const unidades = contarUnidades(itens, atuais);
   const nada = subtotal === 0;
 
   return (
@@ -92,7 +92,8 @@ export function CarrinhoVista() {
         {itens.map((item, indice) => {
           const s = situacoes[indice];
           const teto = tetoDoItem(atuais?.[item.variacaoId]?.estoque ?? QUANTIDADE_MAXIMA);
-          const precoUnitario = s.tipo === 'preco-mudou' ? s.precoAgoraCentavos : item.precoCentavos;
+          const linha = linhaEfetiva(item, atuais?.[item.variacaoId]);
+          const precoMudou = s.tipo === 'preco-mudou' || (s.tipo === 'acima-do-estoque' && s.precoAgoraCentavos !== undefined);
           const fora = s.tipo === 'esgotado' || s.tipo === 'indisponivel';
           return (
             <li key={item.variacaoId} className="space-y-2 rounded-md border border-borda p-3">
@@ -103,7 +104,7 @@ export function CarrinhoVista() {
                 {fora ? (
                   <span className="shrink-0 font-semibold text-atencao">{s.tipo === 'esgotado' ? 'Esgotado' : 'Indisponível'}</span>
                 ) : (
-                  <span className="shrink-0 font-bold">{formatarPreco(precoUnitario * item.quantidade)}</span>
+                  <span className="shrink-0 font-bold">{formatarPreco(linha.precoCentavos * linha.quantidade)}</span>
                 )}
               </div>
               {s.tipo === 'acima-do-estoque' ? (
@@ -111,9 +112,9 @@ export function CarrinhoVista() {
                   Só {s.disponivel} {s.disponivel === 1 ? 'unidade disponível' : 'unidades disponíveis'}, e o carrinho tem {item.quantidade}. Use &ldquo;Continuar com o que está disponível&rdquo; ou diminua a quantidade.
                 </p>
               ) : null}
-              {s.tipo === 'preco-mudou' ? (
+              {precoMudou && s.precoAntesCentavos !== undefined && s.precoAgoraCentavos !== undefined ? (
                 <p className="text-sm text-atencao">
-                  {item.quantidade} × {formatarPreco(s.precoAgoraCentavos)} (antes {formatarPreco(s.precoAntesCentavos)})
+                  {linha.quantidade} × {formatarPreco(s.precoAgoraCentavos)} (antes {formatarPreco(s.precoAntesCentavos)})
                 </p>
               ) : null}
               {fora ? (

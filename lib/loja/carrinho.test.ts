@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   adicionar, contarUnidades, continuarComDisponiveis, definirQuantidade, lerCarrinhoSeguro, limitarQuantidade, QUANTIDADE_MAXIMA,
-  remover, situacaoDoItem, subtotalCentavos, tetoDoItem, type ItemCarrinho,
+  linhaEfetiva, remover, situacaoDoItem, subtotalCentavos, tetoDoItem, type ItemCarrinho,
 } from './carrinho';
 
 const SAB: ItemCarrinho = { variacaoId: 'v1', slug: 'sabonete-artesanal', nome: 'Sabonete artesanal', aroma: 'lavanda', tamanho: '90 g', precoCentavos: 2000, quantidade: 2 };
@@ -70,6 +70,23 @@ describe('conferência com o catálogo de hoje', () => {
     expect(situacaoDoItem(cinco, { precoCentavos: 2000, estoque: 5 })).toEqual({ tipo: 'ok' });
     expect(subtotalCentavos([cinco], { v1: { precoCentavos: 2000, estoque: 3 } })).toBe(3 * 2000);
     expect(continuarComDisponiveis([cinco], { v1: { precoCentavos: 2000, estoque: 3 } })[0].quantidade).toBe(3);
+  });
+
+  it('acima do estoque E preço mudado: um só resultado com os dois dados, e a conta usa o preço de hoje', () => {
+    const nove = { ...SAB, quantidade: 9 };
+    const atual = { precoCentavos: 2200, estoque: 7 };
+    expect(situacaoDoItem(nove, atual)).toEqual({ tipo: 'acima-do-estoque', disponivel: 7, precoAntesCentavos: 2000, precoAgoraCentavos: 2200 });
+    expect(linhaEfetiva(nove, atual)).toEqual({ quantidade: 7, precoCentavos: 2200 });
+    expect(subtotalCentavos([nove], { v1: atual })).toBe(7 * 2200);
+  });
+
+  it('a linha, o subtotal e a contagem de itens contam as mesmas unidades', () => {
+    const nove = { ...SAB, quantidade: 9 };
+    const atuais = { v1: { precoCentavos: 2200, estoque: 7 }, v2: { precoCentavos: 4500, estoque: 0 } };
+    expect(contarUnidades([nove, VELA], atuais)).toBe(7); // a vela esgotada não conta
+    expect(contarUnidades([nove, VELA])).toBe(10); // sem conferência, vale o salvo
+    const soma = [nove, VELA].reduce((t, i) => (atuais[i.variacaoId as 'v1' | 'v2'].estoque > 0 ? t + linhaEfetiva(i, atuais[i.variacaoId as 'v1' | 'v2']).quantidade * linhaEfetiva(i, atuais[i.variacaoId as 'v1' | 'v2']).precoCentavos : t), 0);
+    expect(subtotalCentavos([nove, VELA], atuais)).toBe(soma);
   });
 
   it('o teto por item também vale quando o estoque é maior', () => {

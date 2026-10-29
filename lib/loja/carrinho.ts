@@ -18,7 +18,8 @@ export type SituacaoAtual = { precoCentavos: number; estoque: number };
 export type Situacao =
   | { tipo: 'ok' }
   | { tipo: 'esgotado' }
-  | { tipo: 'acima-do-estoque'; disponivel: number }
+  // Pode vir junto com preço que mudou: os dois avisos aparecem, e a conta usa o preço de hoje.
+  | { tipo: 'acima-do-estoque'; disponivel: number; precoAntesCentavos?: number; precoAgoraCentavos?: number }
   | { tipo: 'indisponivel' }
   | { tipo: 'preco-mudou'; precoAntesCentavos: number; precoAgoraCentavos: number };
 
@@ -51,15 +52,33 @@ export function remover(itens: readonly ItemCarrinho[], variacaoId: string): Ite
   return itens.filter((i) => i.variacaoId !== variacaoId);
 }
 
-export function contarUnidades(itens: readonly ItemCarrinho[]): number {
-  return itens.reduce((soma, i) => soma + i.quantidade, 0);
+// O que a linha realmente vale hoje: quantidade limitada ao disponível, pelo preço ATUAL (quando o
+// catálogo foi conferido). Linha, subtotal e contagem de itens leem daqui: os números sempre batem.
+export function linhaEfetiva(item: ItemCarrinho, atual?: SituacaoAtual): { quantidade: number; precoCentavos: number } {
+  if (!atual) return { quantidade: item.quantidade, precoCentavos: item.precoCentavos };
+  return { quantidade: Math.min(item.quantidade, tetoDoItem(atual.estoque)), precoCentavos: atual.precoCentavos };
+}
+
+function compravel(atuais: Readonly<Record<string, SituacaoAtual>> | undefined, i: ItemCarrinho): boolean {
+  if (!atuais) return true;
+  const atual = atuais[i.variacaoId];
+  return Boolean(atual) && atual.estoque > 0;
+}
+
+// Unidades que entram na conta ("Subtotal (7 itens)"): as mesmas do subtotal.
+export function contarUnidades(itens: readonly ItemCarrinho[], atuais?: Readonly<Record<string, SituacaoAtual>>): number {
+  return itens.reduce((soma, i) => (compravel(atuais, i) ? soma + linhaEfetiva(i, atuais?.[i.variacaoId]).quantidade : soma), 0);
 }
 
 export function situacaoDoItem(item: ItemCarrinho, atual: SituacaoAtual | undefined): Situacao {
   if (!atual) return { tipo: 'indisponivel' };
   if (atual.estoque <= 0) return { tipo: 'esgotado' };
-  if (item.quantidade > tetoDoItem(atual.estoque)) return { tipo: 'acima-do-estoque', disponivel: tetoDoItem(atual.estoque) };
-  if (atual.precoCentavos !== item.precoCentavos) {
+  const mudou = atual.precoCentavos !== item.precoCentavos;
+  if (item.quantidade > tetoDoItem(atual.estoque)) {
+    const base = { tipo: 'acima-do-estoque' as const, disponivel: tetoDoItem(atual.estoque) };
+    return mudou ? { ...base, precoAntesCentavos: item.precoCentavos, precoAgoraCentavos: atual.precoCentavos } : base;
+  }
+  if (mudou) {
     return { tipo: 'preco-mudou', precoAntesCentavos: item.precoCentavos, precoAgoraCentavos: atual.precoCentavos };
   }
   return { tipo: 'ok' };
@@ -70,11 +89,10 @@ export function situacaoDoItem(item: ItemCarrinho, atual: SituacaoAtual | undefi
 export function subtotalCentavos(itens: readonly ItemCarrinho[], atuais?: Readonly<Record<string, SituacaoAtual>>): number {
   let total = 0;
   for (const i of itens) {
-    const atual = atuais?.[i.variacaoId];
-    if (atuais && (!atual || atual.estoque <= 0)) continue;
-    // Nunca conta mais que o disponível: o checkout confere o mesmo teto.
-    const quantidade = atual ? Math.min(i.quantidade, tetoDoItem(atual.estoque)) : i.quantidade;
-    total += (atual ? atual.precoCentavos : i.precoCentavos) * quantidade;
+    if (!compravel(atuais, i)) continue;
+    // Nunca conta mais que o disponível, pelo preço de hoje: o checkout confere o mesmo teto.
+    const { quantidade, precoCentavos } = linhaEfetiva(i, atuais?.[i.variacaoId]);
+    total += precoCentavos * quantidade;
   }
   return total;
 }
