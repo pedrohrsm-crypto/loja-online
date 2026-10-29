@@ -52,22 +52,24 @@ Portões medidos na bancada em 27-Out, Node 24.21, a partir de `npm ci` limpo: `
 | **Mercado Pago** (Orders API, sandbox) | Pix **0,0%**; cartão à vista **4,98%** (painel do Mercado Pago, 26-Out). **Não conferidos:** prazo de recebimento, parcelamento, prazo máximo de estorno (#6) | Expiração do Pix de 30 min a 30 dias (padrão 24 h); webhook com prazo de **22 s**, reentrega a cada 15 min | Exige chave Pix cadastrada na conta **real**; contas de teste sem acesso administrativo | `x-signature: ts=…,v1=…`, HMAC-SHA256 em hex sobre `id:<data.id>;request-id:<x-request-id>;ts:<ts>;` (o corpo **não** é assinado; decidir pelo `GET`) | 26 e 27-Out-2026 (doc oficial + painel) |
 | **Vercel** (Hobby) | Grátis; Pro para uso comercial (preço não conferido) | Cron **só 1×/dia**, com precisão de ±59 min (expressão mais frequente falha no deploy); 1 milhão de invocações e 100 GB de transferência por mês | **Hobby é só uso pessoal, não comercial**: uma loja real de cliente exige Pro (#7) | Não se aplica (o cron da Vercel manda `Authorization: Bearer <CRON_SECRET>`) | 27-Out-2026 (docs: cron usage-and-pricing, fair use) |
 | **Supabase** (Free) | Grátis; Pro a partir de US$ 25/mês | 500 MB de banco, 50 mil MAU, 1 GB de storage, **2 projetos ativos**; **pausa depois de 1 semana sem atividade** | SMTP padrão manda **só para membros da equipe**, 2 e-mails/hora: compradores precisam de SMTP próprio | Não se aplica | 27-Out-2026 (pricing, guia de SMTP) |
-| **Resend** (Free) — e-mail e SMTP do Auth, **decidido na D-LO-7 (#17), sem domínio próprio** | Grátis; Pro US$ 20/mês | 3.000 e-mails/mês, **100/dia**, 3 domínios | **Sem domínio verificado, só entrega no e-mail do dono da conta** e em endereços de teste (`delivered@resend.dev`, 04 4.8) → decisão D-LO-7 | Webhook de status não usado no MVP | 27-Out-2026 (pricing, doc do erro 403) |
+| **Resend** (Free) — e-mail e SMTP do Auth, **decidido na D-LO-7 (#17), sem domínio próprio** | Grátis; Pro US$ 20/mês | 3.000 e-mails/mês, **100/dia**, 3 domínios | **Sem domínio verificado, só entrega no e-mail do dono da conta** e em endereços de teste (`delivered@resend.dev`, 04 4.8) → D-LO-7 (#17) | Webhook de status não usado no MVP | 27-Out-2026 (pricing, doc do erro 403) |
 | **GitHub Actions** | Grátis em repositório público | — | — | Plano B do cron de 15 min da reconciliação (#9): agendamento chama a rota por POST com segredo | 27-Out-2026 |
 
-## Variáveis de ambiente (levantadas em 29-Out)
-Os valores **nunca** vão para arquivo nem para commit: o Pedro cola no painel. As da Vercel valem para os ambientes Production e Preview. O comprador de teste do e2e manual usa o e-mail do dono da conta Resend (D-LO-7, #17).
+## Variáveis de ambiente (levantadas em 29-Out, em `1171cfc`: `.env.example` e as leituras de `process.env` e `ambiente()` no código)
+Os valores **nunca** vão para arquivo nem para commit: o Pedro cola no painel. As da Vercel valem para os ambientes Production e Preview, exceto `NEXT_PUBLIC_SITE_URL`, que vale **só em Production**: sem ela, a prévia usa o próprio endereço (`app/conta/acoes.ts`), e com ela as URLs de volta do pagamento de uma prévia apontariam para produção.
+
+**Os caminhos de painel da coluna "De onde vem" não foram conferidos** (nenhuma das fontes datadas da tabela de fornecedores os cobre): confirmar cada um ao colar o valor. O comprador de teste do e2e manual usa o e-mail do dono da conta Resend (D-LO-7, #17).
 
 | Variável | Onde | De onde vem | Quando | Estado |
 |---|---|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Vercel | Supabase → Project Settings → API | Dia 1 (catálogo) | [ ] |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Vercel | Supabase → Project Settings → API (chave pública) | Dia 1 | [ ] |
-| `SUPABASE_SERVICE_ROLE_KEY` | Vercel, **só servidor** | Supabase → Project Settings → API (chave secreta) | Dia 1 | [ ] |
+| `NEXT_PUBLIC_SUPABASE_URL` | Vercel | Supabase → Project Settings → API (não conferido) | Dia 1 (catálogo) | [ ] |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Vercel | Supabase → Project Settings → API, a chave **pública**. Não conferido se o projeto mostra a chave legada (`anon`) ou a nova (publicável); conferir no Dia 1 qual o código aceita antes de colar | Dia 1 | [ ] |
+| `SUPABASE_SERVICE_ROLE_KEY` | Vercel, **só servidor** | Supabase → Project Settings → API, a chave **secreta**. Mesma ressalva: legada (`service_role`) ou nova (secreta), não conferido | Dia 1 | [ ] |
 | `NEXT_PUBLIC_SITE_URL` | Vercel | Endereço de produção da Vercel (`https://loja-online-….vercel.app`) | Dia 1 | [ ] |
 | `CRON_SECRET` | Vercel | Texto aleatório longo, gerado pelo Pedro (ex.: gerador de senha, 32+ caracteres) | Dia 1 (o cron diário já está no `vercel.json`) | [ ] |
-| Credenciais de **teste** do Mercado Pago: chave pública, access token e assinatura secreta do webhook | Vercel | Mercado Pago → Suas integrações → aplicação → Credenciais de teste; Webhooks → assinatura secreta | Fatia de pagamentos; os nomes finais entram no `.env.example` com o código (a guarda de `lib/guardas.test.ts` cobra) | [ ] |
-| Chave de API do Resend e remetente (`onboarding@resend.dev`) | Vercel | Resend → API Keys (permissão só de envio) | Fatia de e-mails (4 e 5-Nov); nomes finais com o código | [ ] |
+| Credenciais de **teste** do Mercado Pago: chave pública, access token e assinatura secreta do webhook | Vercel | Mercado Pago → Suas integrações → aplicação → Credenciais de teste; Webhooks → assinatura secreta (não conferido) | Fatia de pagamentos; os nomes finais entram no `.env.example` com o código (a guarda de `lib/guardas.test.ts` cobra) | [ ] |
+| Chave de API do Resend e remetente (`onboarding@resend.dev`) | Vercel | Resend → API Keys, com permissão só de envio (não conferido) | Fatia de e-mails (4 e 5-Nov); nomes finais com o código | [ ] |
 | SMTP do Auth com o Resend | **Supabase**, não Vercel | Supabase → Authentication → SMTP: host `smtp.resend.com`, usuário `resend`, senha = chave do Resend (dados da doc do Resend, a conferir na fatia) | Fatia de e-mails, junto com o código de 6 dígitos (D-LO-6, #11) | [ ] |
 
-As variáveis do Stripe no `.env.example` são herança do starter e saem na fatia de pagamentos; **não** precisam ser criadas na Vercel. Depois de criar as do Dia 1, o primeiro deploy de produção é refeito pelo PM, que confere o estado `READY` na API da Vercel.
+As variáveis do Stripe no `.env.example` (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_API_VERSION`, `STRIPE_PRECO_CURSO` e `PAGAMENTO_METODOS`, que tem o padrão `card`) são herança do starter e saem na fatia de pagamentos; **não** precisam ser criadas na Vercel. Depois de criar as do Dia 1, o primeiro deploy de produção é refeito pelo PM, que confere o estado `READY` na API da Vercel.
 
