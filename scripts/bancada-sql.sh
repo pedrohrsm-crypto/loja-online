@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Bancada SQL: aplica o stub do Supabase, todas as migrations em ordem e os testes de
-# acesso num banco novo. Os ASSERT das migrations e dos testes reprovam a execução.
+# Bancada SQL: aplica o stub do Supabase, todas as migrations em ordem, a carga fictícia
+# (duas vezes, para provar que é idempotente) e os testes de acesso num banco novo.
+# Os ASSERT das migrations e dos testes reprovam a execução.
 #
 # Uso: DATABASE_URL=postgres://... bash scripts/bancada-sql.sh   (CI, com serviço postgres)
 #      bash scripts/bancada-sql.sh                               (local: cluster temporário)
@@ -32,9 +33,16 @@ for m in "$RAIZ"/supabase/migrations/*.sql; do
   "${PSQL[@]}" "$URL_BANCO" -f "$m" || { echo "REPROVOU na migration $(basename "$m")" >&2; exit 1; }
   n=$((n + 1))
 done
+c=0
+for s in "$RAIZ"/supabase/seed/*.sql; do
+  for vez in 1 2; do
+    "${PSQL[@]}" "$URL_BANCO" -f "$s" || { echo "REPROVOU na carga $(basename "$s") (vez $vez)" >&2; exit 1; }
+  done
+  c=$((c + 1))
+done
 t=0
 for f in "$RAIZ"/supabase/bancada/testes/*.sql; do
   "${PSQL[@]}" "$URL_BANCO" -f "$f" || { echo "REPROVOU no teste $(basename "$f")" >&2; exit 1; }
   t=$((t + 1))
 done
-echo "bancada SQL: $n migration(s) e $t teste(s) verdes"
+echo "bancada SQL: $n migration(s), $c carga(s) aplicada(s) 2× e $t teste(s) verdes"
