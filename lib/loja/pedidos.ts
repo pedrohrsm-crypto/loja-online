@@ -16,7 +16,7 @@ export type PedidoPainel = {
 
 export const ROTULO_STATUS: Record<StatusPedido, string> = {
   pago: 'Pago',
-  separado: 'Em preparação',
+  separado: 'Separado',
   enviado: 'Enviado',
   entregue: 'Entregue',
   estornado: 'Estornado',

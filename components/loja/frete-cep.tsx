@@ -76,7 +76,7 @@ export function FreteCep({ selecionavel = false, aoEscolher }: Props) {
         </button>
       </div>
       <p id={`${id}-ajuda`} className="text-sm text-texto-suave">
-        Só números. Exemplo: 01310-100.
+        Digite os 8 números do CEP, com ou sem hífen. Exemplo: 01310-100.
       </p>
       <div aria-live="polite" className="space-y-1">
         {resultado && !resultado.ok ? <p className="text-sm text-erro">{resultado.mensagem}</p> : null}

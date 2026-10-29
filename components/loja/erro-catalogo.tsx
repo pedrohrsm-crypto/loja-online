@@ -1,6 +1,7 @@
 import { Aviso } from './aviso';
 import { estiloBotao } from '@/lib/ui/botao';
 import { BarraAcao } from './barra-acao';
+import { CarrinhoSalvo } from './carrinho-salvo';
 
 export const TEXTO_ERRO_CATALOGO = 'Não conseguimos carregar o catálogo agora. Tente de novo em instantes.';
 
@@ -11,7 +12,7 @@ export function ErroCatalogo({ href }: { href: string }) {
     <div className="space-y-3">
       <h1 className="text-xl font-bold">Não foi possível carregar</h1>
       <Aviso tipo="erro" titulo={TEXTO_ERRO_CATALOGO} urgente>
-        Os itens do seu carrinho continuam salvos neste aparelho.
+        <CarrinhoSalvo />
       </Aviso>
       <BarraAcao>
         <a href={href} className={estiloBotao('primario')}>

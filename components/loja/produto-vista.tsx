@@ -6,10 +6,10 @@ import Link from 'next/link';
 import { useId, useState } from 'react';
 import { formatarPreco, estaEsgotada } from '@/lib/catalogo/preco';
 import type { ProdutoComVariacoes, Variacao } from '@/lib/catalogo/tipos';
-import { adicionar } from '@/lib/loja/carrinho';
+import { adicionar, tetoDoItem } from '@/lib/loja/carrinho';
 import { gravarCarrinho, lerCarrinhoAgora } from '@/lib/loja/carrinho-armazenamento';
 import { alternativaDisponivel, aromasDe, tamanhosDe, trocarAroma, variacaoInicial } from '@/lib/loja/variacao';
-import { linkWhatsapp, mensagemProduto } from '@/lib/loja/whatsapp';
+import { linkWhatsapp, mensagemProduto, mensagemProdutoSemVariacao } from '@/lib/loja/whatsapp';
 import { estiloBotao } from '@/lib/ui/botao';
 import { Aviso } from './aviso';
 import { FreteCep } from './frete-cep';
@@ -30,20 +30,27 @@ export function ProdutoVista({ produto }: { produto: ProdutoComVariacoes }) {
   const id = useId();
   const { variacoes } = produto;
   const [escolhidaId, setEscolhidaId] = useState<string | null>(() => variacaoInicial(variacoes)?.id ?? null);
-  const [adicionado, setAdicionado] = useState(false);
+  const [adicionado, setAdicionado] = useState<'nao' | 'sim' | 'maximo'>('nao');
   const escolhida = variacoes.find((v) => v.id === escolhidaId) ?? null;
   const alternativa = escolhida ? alternativaDisponivel(variacoes, escolhida) : null;
 
   function escolher(v: Variacao) {
     setEscolhidaId(v.id);
-    setAdicionado(false);
+    setAdicionado('nao');
   }
 
   function colocarNoCarrinho(v: Variacao) {
+    const atual = lerCarrinhoAgora();
+    const noCarrinho = atual.find((i) => i.variacaoId === v.id)?.quantidade ?? 0;
+    // Já está no máximo que dá para levar (estoque ou teto por item): diz isso, em vez de fingir que somou.
+    if (noCarrinho >= tetoDoItem(v.estoque)) {
+      setAdicionado('maximo');
+      return;
+    }
     gravarCarrinho(
-      adicionar(lerCarrinhoAgora(), { variacaoId: v.id, slug: produto.slug, nome: produto.nome, aroma: v.aroma, tamanho: v.tamanho, precoCentavos: v.precoCentavos }, v.estoque),
+      adicionar(atual, { variacaoId: v.id, slug: produto.slug, nome: produto.nome, aroma: v.aroma, tamanho: v.tamanho, precoCentavos: v.precoCentavos }, v.estoque),
     );
-    setAdicionado(true);
+    setAdicionado('sim');
   }
 
   return (
@@ -136,7 +143,7 @@ export function ProdutoVista({ produto }: { produto: ProdutoComVariacoes }) {
       </section>
 
       <a
-        href={linkWhatsapp(escolhida ? mensagemProduto(produto.nome, escolhida.aroma, escolhida.tamanho) : `Olá! Tenho uma dúvida sobre o produto ${produto.nome}.`)}
+        href={linkWhatsapp(escolhida ? mensagemProduto(produto.nome, escolhida.aroma, escolhida.tamanho) : mensagemProdutoSemVariacao(produto.nome))}
         target="_blank"
         rel="noopener noreferrer"
         className={estiloBotao('secundario', 'w-full')}
@@ -167,8 +174,15 @@ export function ProdutoVista({ produto }: { produto: ProdutoComVariacoes }) {
               Adicionar ao carrinho
             </button>
           )}
-          <p role="status" className={adicionado ? 'text-sm text-sucesso' : 'sr-only'}>
-            {adicionado ? (
+          <p role="status" className={adicionado === 'nao' ? 'sr-only' : adicionado === 'sim' ? 'text-sm text-sucesso' : 'text-sm text-atencao'}>
+            {adicionado === 'maximo' ? (
+              <>
+                Você já tem o máximo disponível no carrinho.{' '}
+                <Link href="/carrinho" className="font-semibold underline underline-offset-4">
+                  Ver carrinho
+                </Link>
+              </>
+            ) : adicionado === 'sim' ? (
               <>
                 Adicionado ao carrinho.{' '}
                 <Link href="/carrinho" className="font-semibold underline underline-offset-4">

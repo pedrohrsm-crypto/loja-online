@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { formatarPreco } from '@/lib/catalogo/preco';
 import { AVISO_EXEMPLO, CODIGO_PIX_EXEMPLO, type PedidoPixExemplo } from '@/lib/loja/exemplos';
-import { formatarContagem, segundosRestantes, situacaoExibida } from '@/lib/loja/pix';
+import { formatarContagem, PRAZO_PIX_SEGUNDOS, segundosRestantes, situacaoExibida } from '@/lib/loja/pix';
 import { linkWhatsapp, mensagemPedido } from '@/lib/loja/whatsapp';
 import { estiloBotao } from '@/lib/ui/botao';
 import { Aviso } from './aviso';
@@ -80,7 +80,7 @@ export function PixVista({ pedido }: { pedido: PedidoPixExemplo }) {
         {exemplo}
         <div className="space-y-2" role="status">
           <h1 className="text-2xl font-bold">Estamos confirmando seu pagamento</h1>
-          <p className="text-texto-suave">Isso costuma levar menos de 1 minuto. Não pague de novo: esta página atualiza sozinha.</p>
+          <p className="text-texto-suave">Se você pagou perto do fim do prazo, a confirmação pode demorar. Não pague de novo: esta página atualiza sozinha.</p>
           <p className="text-sm text-texto-suave">Pedido nº {pedido.numero} · {formatarPreco(pedido.totalCentavos)}</p>
         </div>
         <BarraAcao>
@@ -102,9 +102,9 @@ export function PixVista({ pedido }: { pedido: PedidoPixExemplo }) {
       <div className="space-y-4">
         {exemplo}
         <h1 className="text-2xl font-bold">O Pix expirou</h1>
-        <p className="text-texto-suave">O prazo de 30 minutos acabou.</p>
+        <p className="text-texto-suave">O prazo de {PRAZO_PIX_SEGUNDOS / 60} minutos acabou.</p>
         <Aviso tipo="atencao" titulo="Você já pagou?">
-          Se pagou, espere alguns minutos: vamos confirmar e avisar. Não pague de novo.
+          Se pagou, espere alguns minutos: a confirmação aparece nesta página quando chegar. Não pague de novo.
         </Aviso>
         <BarraAcao>
           <button type="button" className={estiloBotao('primario')} onClick={() => setJaPaguei(true)}>
@@ -131,7 +131,7 @@ export function PixVista({ pedido }: { pedido: PedidoPixExemplo }) {
         <p className="text-sm font-semibold">Pix copia e cola (exemplo)</p>
         <code className="block break-all text-sm select-all">{CODIGO_PIX_EXEMPLO}</code>
       </div>
-      <p className="text-sm text-texto-suave">Esta página atualiza sozinha quando o pagamento chegar.</p>
+      <p className="text-sm text-texto-suave">Na loja de verdade, esta página atualiza sozinha quando o pagamento chegar.</p>
       <div data-testid="barra-copiar" className="sticky bottom-(--altura-navegacao) z-30 -mx-4 space-y-1 border-t border-borda bg-fundo px-4 py-3">
         <button type="button" className={estiloBotao('primario', 'w-full')} onClick={copiar}>
           Copiar código Pix

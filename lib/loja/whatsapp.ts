@@ -10,6 +10,10 @@ export function mensagemProduto(nome: string, aroma: string, tamanho: string): s
   return `Olá! Tenho uma dúvida sobre o produto ${nome} (${aroma}, ${tamanho}).`;
 }
 
+export function mensagemProdutoSemVariacao(nome: string): string {
+  return `Olá! Tenho uma dúvida sobre o produto ${nome}.`;
+}
+
 export function mensagemPedido(numero: string): string {
   return `Olá! Preciso de ajuda com o pedido nº ${numero}.`;
 }

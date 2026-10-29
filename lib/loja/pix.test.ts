@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { formatarContagem, PRAZO_PIX_SEGUNDOS, segundosRestantes, situacaoExibida } from './pix';
+import { PEDIDOS_PIX_EXEMPLO } from './exemplos';
 import { LADO_QR, matrizQrExemplo } from './qr';
 
 describe('contagem do Pix', () => {
@@ -14,6 +15,17 @@ describe('contagem do Pix', () => {
     expect(segundosRestantes(10_500, 10_000)).toBe(1);
     expect(segundosRestantes(10_000, 10_000)).toBe(0);
     expect(segundosRestantes(5_000, 10_000)).toBe(0);
+  });
+});
+
+describe('prazo do Pix nos exemplos', () => {
+  it('o pedido aguardando de exemplo deriva do prazo do produto (PRAZO_PIX_SEGUNDOS)', () => {
+    const aguardando = PEDIDOS_PIX_EXEMPLO.filter((p) => p.situacao === 'aguardando');
+    expect(aguardando.length).toBeGreaterThan(0);
+    for (const p of aguardando) {
+      expect(p.segundosRestantes).toBeLessThanOrEqual(PRAZO_PIX_SEGUNDOS);
+      expect(p.segundosRestantes).toBeGreaterThan(PRAZO_PIX_SEGUNDOS - 60);
+    }
   });
 });
 

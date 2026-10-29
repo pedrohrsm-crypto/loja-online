@@ -1,4 +1,4 @@
-// Escolha de variação na página do produto: regras puras, testadas na JVM do Node (vitest).
+// Escolha de variação na página do produto: regras puras, testadas no Node (vitest).
 // O balão de tamanho mostra só o tamanho; o preço mostrado é o da variação escolhida.
 import { estaEsgotada } from '@/lib/catalogo/preco';
 import type { Variacao } from '@/lib/catalogo/tipos';

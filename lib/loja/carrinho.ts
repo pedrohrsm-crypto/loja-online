@@ -18,13 +18,21 @@ export type SituacaoAtual = { precoCentavos: number; estoque: number };
 export type Situacao =
   | { tipo: 'ok' }
   | { tipo: 'esgotado' }
+  | { tipo: 'acima-do-estoque'; disponivel: number }
   | { tipo: 'indisponivel' }
   | { tipo: 'preco-mudou'; precoAntesCentavos: number; precoAgoraCentavos: number };
+
+// Quantas unidades do item o comprador pode levar: o estoque, até o teto por item (FIDELIDADE.md §1,
+// regra 3). Única regra do teto: carrinho, produto e conferência chamam esta função.
+export function tetoDoItem(estoque: number): number {
+  const e = Math.trunc(estoque);
+  return Number.isFinite(e) ? Math.max(0, Math.min(e, QUANTIDADE_MAXIMA)) : 0;
+}
 
 export function limitarQuantidade(quantidade: number, estoque: number = QUANTIDADE_MAXIMA): number {
   const n = Math.trunc(quantidade);
   if (!Number.isFinite(n)) return 1;
-  return Math.min(Math.max(n, 1), Math.max(1, Math.min(estoque, QUANTIDADE_MAXIMA)));
+  return Math.min(Math.max(n, 1), Math.max(1, tetoDoItem(estoque)));
 }
 
 export function adicionar(itens: readonly ItemCarrinho[], novo: Omit<ItemCarrinho, 'quantidade'>, estoque: number): ItemCarrinho[] {
@@ -50,6 +58,7 @@ export function contarUnidades(itens: readonly ItemCarrinho[]): number {
 export function situacaoDoItem(item: ItemCarrinho, atual: SituacaoAtual | undefined): Situacao {
   if (!atual) return { tipo: 'indisponivel' };
   if (atual.estoque <= 0) return { tipo: 'esgotado' };
+  if (item.quantidade > tetoDoItem(atual.estoque)) return { tipo: 'acima-do-estoque', disponivel: tetoDoItem(atual.estoque) };
   if (atual.precoCentavos !== item.precoCentavos) {
     return { tipo: 'preco-mudou', precoAntesCentavos: item.precoCentavos, precoAgoraCentavos: atual.precoCentavos };
   }
@@ -63,7 +72,9 @@ export function subtotalCentavos(itens: readonly ItemCarrinho[], atuais?: Readon
   for (const i of itens) {
     const atual = atuais?.[i.variacaoId];
     if (atuais && (!atual || atual.estoque <= 0)) continue;
-    total += (atual ? atual.precoCentavos : i.precoCentavos) * i.quantidade;
+    // Nunca conta mais que o disponível: o checkout confere o mesmo teto.
+    const quantidade = atual ? Math.min(i.quantidade, tetoDoItem(atual.estoque)) : i.quantidade;
+    total += (atual ? atual.precoCentavos : i.precoCentavos) * quantidade;
   }
   return total;
 }

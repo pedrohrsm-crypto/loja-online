@@ -107,8 +107,19 @@ test.describe('Produto', () => {
     await page.goto('/produto/quebrado');
     await expect(page.getByRole('alert').filter({ hasText: 'Não conseguimos carregar o catálogo agora. Tente de novo em instantes.' })).toBeVisible();
     await expect(page.getByText('não está mais à venda')).toHaveCount(0);
+    // sem item no carrinho, não diz que o carrinho continua salvo
+    await expect(page.getByText(/continuam salvos/)).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Tentar de novo' })).toBeVisible();
     expect(await axe(page)).toEqual([]);
+  });
+
+  test('já no máximo do estoque: diz isso em vez de fingir que somou', async ({ page }) => {
+    await semearCarrinho(page, [{ ...ITEM_ALECRIM, variacaoId: 'v-lar-90', aroma: 'laranja-doce', quantidade: 7 }]);
+    await page.goto(ROTA);
+    await page.getByText('laranja-doce', { exact: true }).click();
+    await page.getByText('90 g', { exact: true }).click();
+    await page.getByRole('button', { name: 'Adicionar ao carrinho' }).click();
+    await expect(page.getByText('Você já tem o máximo disponível no carrinho.')).toBeVisible();
   });
 
   test('frete pelo CEP: formata no blur e mostra as opções da região', async ({ page }) => {
@@ -121,6 +132,12 @@ test.describe('Produto', () => {
     await page.getByRole('button', { name: 'Calcular' }).click();
     await expect(page.getByText('Motoboy')).toBeVisible();
     await expect(page.getByText('Grátis')).toBeVisible();
+  });
+
+  test('banco fora do ar com item no carrinho: avisa que os itens continuam salvos', async ({ page }) => {
+    await semearCarrinho(page, [ITEM_ALECRIM]);
+    await page.goto('/produto/quebrado');
+    await expect(page.getByText('Os itens do seu carrinho continuam salvos neste aparelho.')).toBeVisible();
   });
 
   test('frete pelo CEP: CEP inválido e CEP sem entrega dizem o que fazer', async ({ page }) => {
@@ -203,6 +220,21 @@ test.describe('Carrinho', () => {
     await expect(page.getByText('Vela aromática')).toHaveCount(0);
     await expect(page.getByText('Um item mudou desde que você o adicionou')).toHaveCount(0);
     await expect(page.getByTestId('barra-total')).toContainText(/R\$\s44,00/);
+  });
+
+  test('quantidade acima do estoque: marca a linha, só conta o disponível e "continuar" ajusta', async ({ page }) => {
+    // laranja-doce 90 g tem 7 em estoque no catálogo falso
+    await semearCarrinho(page, [{ ...ITEM_ALECRIM, variacaoId: 'v-lar-90', aroma: 'laranja-doce', quantidade: 9 }]);
+    await page.goto('/carrinho');
+    await expect(page.getByText('Um item mudou desde que você o adicionou')).toBeVisible();
+    await expect(page.getByText(/Só 7 unidades disponíveis, e o carrinho tem 9/)).toBeVisible();
+    await expect(page.getByTestId('barra-total')).toContainText(/R\$\s154,00/); // 7 × R$ 22,00, não 9
+    await expect(page.getByRole('button', { name: 'Finalizar compra' })).toHaveCount(0);
+    expect(await axe(page)).toEqual([]);
+    await page.getByRole('button', { name: 'Continuar com o que está disponível' }).click();
+    await expect(page.getByText('Um item mudou desde que você o adicionou')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /Aumentar a quantidade/ })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Finalizar compra' })).toBeVisible();
   });
 
   test('catálogo fora do ar: mantém os itens e avisa que não conferiu', async ({ page }) => {
@@ -350,7 +382,7 @@ test.describe('Admin pedidos', () => {
   test('filtro por status e "Todos"', async ({ page, context }) => {
     await entrarComo(context, 'admin');
     await page.goto('/admin/pedidos');
-    await page.getByRole('button', { name: /Em preparação/ }).click();
+    await page.getByRole('button', { name: /Separados/ }).click();
     await expect(page.locator('main li strong')).toHaveText(['Nº 1040']);
     await page.getByRole('button', { name: 'Todos' }).click();
     await expect(page.locator('main li strong')).toHaveCount(6);
@@ -367,7 +399,7 @@ test.describe('Admin pedidos', () => {
   test('enviado pelos Correios exige o código de rastreio, formatado ao sair do campo', async ({ page, context }) => {
     await entrarComo(context, 'admin');
     await page.goto('/admin/pedidos');
-    await page.getByRole('button', { name: /Em preparação/ }).click();
+    await page.getByRole('button', { name: /Separados/ }).click();
     await page.getByRole('button', { name: 'Marcar como enviado' }).click();
     await expect(page.getByText('O código tem 2 letras, 9 números e BR. Exemplo: AA123456789BR.')).toBeVisible();
     const campo = page.getByLabel('Código de rastreio dos Correios');

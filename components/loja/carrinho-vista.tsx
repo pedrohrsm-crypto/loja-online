@@ -8,8 +8,8 @@ import { formatarPreco } from '@/lib/catalogo/preco';
 import type { FreteRegiao } from '@/lib/catalogo/tipos';
 import { conferirCarrinho, type ResultadoConferencia } from '@/lib/loja/acoes';
 import {
-  continuarComDisponiveis, contarUnidades, definirQuantidade, limitarQuantidade, QUANTIDADE_MAXIMA, remover,
-  situacaoDoItem, subtotalCentavos, type Situacao,
+  continuarComDisponiveis, contarUnidades, definirQuantidade, QUANTIDADE_MAXIMA, remover,
+  situacaoDoItem, subtotalCentavos, tetoDoItem, type Situacao,
 } from '@/lib/loja/carrinho';
 import { gravarCarrinho, useCarrinho } from '@/lib/loja/carrinho-armazenamento';
 import { textoValorFrete } from '@/lib/loja/frete-texto';
@@ -78,7 +78,7 @@ export function CarrinhoVista() {
 
       {conferido && !conferido.ok ? (
         <Aviso tipo="atencao" titulo="Não conseguimos conferir preço e estoque agora">
-          Seus itens continuam salvos. Confirmaremos tudo de novo antes do pagamento.
+          Seus itens continuam salvos. Recarregue a página em instantes para conferir de novo.
         </Aviso>
       ) : null}
 
@@ -91,8 +91,7 @@ export function CarrinhoVista() {
       <ul className="space-y-3">
         {itens.map((item, indice) => {
           const s = situacoes[indice];
-          const estoque = atuais?.[item.variacaoId]?.estoque ?? QUANTIDADE_MAXIMA;
-          const teto = Math.min(estoque, QUANTIDADE_MAXIMA);
+          const teto = tetoDoItem(atuais?.[item.variacaoId]?.estoque ?? QUANTIDADE_MAXIMA);
           const precoUnitario = s.tipo === 'preco-mudou' ? s.precoAgoraCentavos : item.precoCentavos;
           const fora = s.tipo === 'esgotado' || s.tipo === 'indisponivel';
           return (
@@ -107,6 +106,11 @@ export function CarrinhoVista() {
                   <span className="shrink-0 font-bold">{formatarPreco(precoUnitario * item.quantidade)}</span>
                 )}
               </div>
+              {s.tipo === 'acima-do-estoque' ? (
+                <p className="text-sm text-atencao">
+                  Só {s.disponivel} {s.disponivel === 1 ? 'unidade disponível' : 'unidades disponíveis'}, e o carrinho tem {item.quantidade}. Use &ldquo;Continuar com o que está disponível&rdquo; ou diminua a quantidade.
+                </p>
+              ) : null}
               {s.tipo === 'preco-mudou' ? (
                 <p className="text-sm text-atencao">
                   {item.quantidade} × {formatarPreco(s.precoAgoraCentavos)} (antes {formatarPreco(s.precoAntesCentavos)})
@@ -136,7 +140,7 @@ export function CarrinhoVista() {
                       type="button"
                       className={estiloBotao('secundario')}
                       aria-label={`Aumentar a quantidade de ${item.nome} ${item.aroma} ${item.tamanho}`}
-                      disabled={item.quantidade >= limitarQuantidade(teto, teto)}
+                      disabled={item.quantidade >= teto}
                       onClick={() => gravarCarrinho(definirQuantidade(itens, item.variacaoId, item.quantidade + 1, teto))}
                     >
                       +

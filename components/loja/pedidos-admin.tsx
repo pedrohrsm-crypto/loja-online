@@ -10,16 +10,16 @@ import {
   contarPorStatus, exigeRastreio, filtrarPedidos, normalizarRastreio, proximoStatus, ROTULO_ACAO, ROTULO_STATUS,
   textoHa, validarRastreio, type FiltroPedidos, type PedidoPainel, type StatusPedido,
 } from '@/lib/loja/pedidos';
+import { ROTULO_MODO } from '@/lib/loja/frete-texto';
 import { linkWhatsapp, mensagemPedido } from '@/lib/loja/whatsapp';
 import { estiloBotao } from '@/lib/ui/botao';
 import { Aviso } from './aviso';
 import { NotaExemplo } from './nota-exemplo';
 
-const ROTULO_MODO = { correios: 'Correios', motoboy: 'Motoboy', retirada: 'Retirada' } as const;
 
 const FILTROS: Array<{ valor: FiltroPedidos; rotulo: string; status?: StatusPedido }> = [
   { valor: 'pago', rotulo: 'Pagos', status: 'pago' },
-  { valor: 'separado', rotulo: 'Em preparação', status: 'separado' },
+  { valor: 'separado', rotulo: 'Separados', status: 'separado' },
   { valor: 'enviado', rotulo: 'Enviados', status: 'enviado' },
   { valor: 'entregue', rotulo: 'Entregues', status: 'entregue' },
   { valor: 'todos', rotulo: 'Todos' },

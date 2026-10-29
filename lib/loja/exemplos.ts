@@ -2,7 +2,7 @@
 // pessoas fictícias, sem CPF, sem endereço, sem telefone, e um "Pix" que não existe. Pedidos, carrinho
 // no servidor e Mercado Pago ainda não existem; quando chegarem (Dias 2 e 3), este módulo sai e as
 // telas passam a ler o pedido de verdade. Nenhuma chamada ao Mercado Pago acontece nesta frente.
-import type { SituacaoPix } from './pix';
+import { PRAZO_PIX_SEGUNDOS, type SituacaoPix } from './pix';
 import type { PedidoPainel } from './pedidos';
 
 export const AVISO_EXEMPLO = 'Pedido, QR e código de exemplo: nenhum pagamento é feito.';
@@ -15,12 +15,12 @@ export type PedidoPixExemplo = {
   numero: string;
   totalCentavos: number;
   situacao: SituacaoPix;
-  // Quanto falta do prazo de 30 minutos quando a página abre (só para "aguardando").
+  // Quanto falta do prazo do Pix (PRAZO_PIX_SEGUNDOS) quando a página abre (só para "aguardando").
   segundosRestantes: number;
 };
 
 export const PEDIDOS_PIX_EXEMPLO: readonly PedidoPixExemplo[] = [
-  { numero: '1042', totalCentavos: 11900, situacao: 'aguardando', segundosRestantes: 29 * 60 + 41 },
+  { numero: '1042', totalCentavos: 11900, situacao: 'aguardando', segundosRestantes: PRAZO_PIX_SEGUNDOS - 19 },
   { numero: '1043', totalCentavos: 6000, situacao: 'em-confirmacao', segundosRestantes: 0 },
   { numero: '1044', totalCentavos: 4500, situacao: 'expirado', segundosRestantes: 0 },
   { numero: '1046', totalCentavos: 2200, situacao: 'pago', segundosRestantes: 0 },
