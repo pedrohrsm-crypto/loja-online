@@ -88,7 +88,8 @@
   --color-texto-no-destaque: var(--cor-texto-no-destaque);
   --color-qr-fundo: var(--cor-qr-fundo);
   --color-qr-ponto: var(--cor-qr-ponto);
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: var(--fonte-texto), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-titulo: var(--fonte-titulo), Georgia, "Times New Roman", serif;
 }
 
 html {
@@ -99,6 +100,15 @@ html {
 body {
   font-family: var(--font-sans);
   line-height: 1.5;
+}
+
+/* Títulos em serifa; o corpo fica sem serifa. Letra mais solta em 360 px: leitura antes de efeito. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-titulo);
+  letter-spacing: -0.005em;
+  line-height: 1.2;
 }
 
 /* Foco sempre visível, na cor de foco do tema, só para teclado. */

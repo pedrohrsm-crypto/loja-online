@@ -1,8 +1,14 @@
 import type { Metadata } from 'next';
+import { Fraunces, Inter } from 'next/font/google';
 import Link from 'next/link';
 import { Cabecalho } from '@/components/cabecalho';
 import { NavegacaoLoja } from '@/components/navegacao-loja';
 import './globals.css';
+
+// Fontes auto-hospedadas pelo next/font (sem pedido ao Google no navegador). Títulos em serifa
+// (Fraunces) e texto em Inter; só os pesos usados e só o subconjunto latino (cobre o pt-BR).
+const fonteTitulo = Fraunces({ subsets: ['latin'], weight: ['600', '700'], display: 'swap', variable: '--fonte-titulo' });
+const fonteTexto = Inter({ subsets: ['latin'], weight: ['400', '600', '700'], display: 'swap', variable: '--fonte-texto' });
 
 export const metadata: Metadata = {
   title: { default: 'Ateliê Alecrim', template: '%s · Ateliê Alecrim' },
@@ -11,7 +17,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={`${fonteTitulo.variable} ${fonteTexto.variable}`}>
       <body className="flex min-h-screen flex-col bg-fundo text-texto">
         <a href="#conteudo" className="pular-para-conteudo">Pular para o conteúdo</a>
         <Cabecalho />
