@@ -91,6 +91,16 @@ describe('tokens de cor', () => {
     expect(contraste(claro['cor-fundo'], '#ffffff')).toBeLessThan(contraste(claro['cor-superficie'], '#ffffff'));
   });
 
+  it('raio e sombra dos cartões são tokens em rem, e a sombra deriva da cor do tema (sem hex nem rgb)', () => {
+    const raio = css.match(/--raio-cartao:\s*([^;]+);/)?.[1] ?? '';
+    const sombra = css.match(/--sombra-cartao:\s*([^;]+);/)?.[1] ?? '';
+    expect(raio).toMatch(/^\d+(\.\d+)?rem$/);
+    expect(sombra).toMatch(/var\(--cor-texto\)/);
+    expect(sombra).not.toMatch(/#|rgba?\(|\bpx\b/);
+    expect(css).toMatch(/--radius-cartao:\s*var\(--raio-cartao\)/);
+    expect(css).toMatch(/--shadow-cartao:\s*var\(--sombra-cartao\)/);
+  });
+
   for (const [nome, tema] of Object.entries(TEMAS)) {
     it(`contraste mínimo no tema ${nome}`, () => {
       const falhas = PARES.filter(([a, b, min]) => contraste(tema[a], tema[b]) < min).map(([a, b, min]) => `${a} × ${b}: ${contraste(tema[a], tema[b]).toFixed(2)} < ${min}`);

@@ -62,7 +62,7 @@ function CartaoPedido({ pedido, aoAvancar, aoEstornar }: {
   }
 
   return (
-    <li className="space-y-3 rounded-md border border-borda p-3">
+    <li className="space-y-3 rounded-cartao border border-borda bg-superficie p-4 shadow-cartao">
       <div className="flex items-baseline justify-between gap-3">
         <strong>Nº {pedido.numero}</strong>
         <span className="font-bold">{valor}</span>
@@ -188,7 +188,7 @@ export function PedidosAdmin({ pedidos: iniciais }: { pedidos: readonly PedidoPa
       <p role="status" className={aviso ? 'text-sm text-sucesso' : 'sr-only'}>{aviso}</p>
 
       {visiveis.length === 0 ? (
-        <div className="space-y-1 rounded-md border border-borda bg-superficie p-4 text-center">
+        <div className="space-y-1 rounded-cartao border border-borda bg-superficie p-4 text-center shadow-cartao">
           <h2 className="text-lg font-bold">Nenhum pedido neste filtro</h2>
           <p className="text-texto-suave">Quando entrar um pedido pago, ele aparece aqui.</p>
         </div>

@@ -21,7 +21,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       <body className="flex min-h-screen flex-col bg-fundo text-texto">
         <a href="#conteudo" className="pular-para-conteudo">Pular para o conteúdo</a>
         <Cabecalho />
-        <main id="conteudo" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">{children}</main>
+        <main id="conteudo" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
         <footer className="border-t border-borda">
           <div className="mx-auto flex max-w-5xl flex-wrap gap-x-4 px-4 py-2 text-sm">
             <Link href="/privacidade" className="inline-flex min-h-11 items-center underline underline-offset-4">Privacidade</Link>

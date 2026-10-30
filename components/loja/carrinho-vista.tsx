@@ -96,7 +96,7 @@ export function CarrinhoVista() {
           const precoMudou = s.tipo === 'preco-mudou' || (s.tipo === 'acima-do-estoque' && s.precoAgoraCentavos !== undefined);
           const fora = s.tipo === 'esgotado' || s.tipo === 'indisponivel';
           return (
-            <li key={item.variacaoId} className="space-y-2 rounded-md border border-borda p-3">
+            <li key={item.variacaoId} className="space-y-2 rounded-cartao border border-borda bg-superficie p-4 shadow-cartao">
               <div className="flex items-center justify-between gap-3">
                 <Link href={`/produto/${item.slug}`} className="inline-flex min-h-11 min-w-0 items-center underline underline-offset-4">
                   {item.nome} · {item.aroma} · {item.tamanho}
