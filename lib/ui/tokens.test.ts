@@ -51,6 +51,10 @@ const PARES: Array<[string, string, number]> = [
   // Aviso de atenção (preço mudou, pedido em confirmação).
   ['cor-atencao', 'cor-fundo', 4.5],
   ['cor-atencao', 'cor-superficie', 4.5],
+  // Destaque terracota (selos): texto sobre o preenchimento e o selo como borda/ícone sobre a página.
+  ['cor-texto-no-destaque', 'cor-destaque', 4.5],
+  ['cor-destaque', 'cor-fundo', 3],
+  ['cor-destaque', 'cor-superficie', 3],
   // QR do Pix: ponto escuro sobre fundo claro em todos os temas, senão o leitor não lê.
   ['cor-qr-ponto', 'cor-qr-fundo', 7],
 ];
@@ -69,6 +73,22 @@ describe('tokens de cor', () => {
       const d = Math.abs(matiz(tema['cor-perigo']) - matiz(tema['cor-primaria']));
       expect(Math.min(d, 360 - d)).toBeGreaterThanOrEqual(60);
     }
+  });
+
+  it('identidade botânica: primária é verde-sálvia e o destaque é terracota, em cada tema', () => {
+    for (const tema of Object.values(TEMAS)) {
+      expect(matiz(tema['cor-primaria'])).toBeGreaterThanOrEqual(90);
+      expect(matiz(tema['cor-primaria'])).toBeLessThanOrEqual(170);
+      expect(matiz(tema['cor-destaque'])).toBeGreaterThanOrEqual(10);
+      expect(matiz(tema['cor-destaque'])).toBeLessThanOrEqual(35);
+    }
+  });
+
+  it('o fundo é creme: quente (vermelho acima do azul) e mais claro que a superfície no tema claro', () => {
+    const claro = TEMAS.claro;
+    const [r, , b] = [1, 3, 5].map((i) => parseInt(claro['cor-fundo'].slice(i, i + 2), 16));
+    expect(r - b).toBeGreaterThanOrEqual(8);
+    expect(contraste(claro['cor-fundo'], '#ffffff')).toBeLessThan(contraste(claro['cor-superficie'], '#ffffff'));
   });
 
   for (const [nome, tema] of Object.entries(TEMAS)) {
