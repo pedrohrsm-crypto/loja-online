@@ -26,6 +26,8 @@ export const MENSAGENS = {
   // Mesmo texto para e-mail novo e e-mail que já tem conta: só o primeiro recebe o código.
   codigoEnviado: 'Se este e-mail ainda não tem conta, enviamos para ele um código de 6 números. Digite aqui mesmo, sem sair desta página. Se você já tem conta, entre com a sua senha.',
   faltaConfirmar: 'Falta confirmar o seu e-mail. Enviamos um código de 6 números para ele: digite aqui mesmo.',
+  // Quando o reenvio falhou (limite de 60 s, SMTP): não afirma que mandou nada.
+  faltaConfirmarSemEnvio: 'Falta confirmar o seu e-mail. Se o código não chegar, peça um novo em 1 minuto.',
   reenviado: 'Se houver um cadastro esperando confirmação com esse e-mail, enviamos um código novo. Ele pode levar alguns minutos.',
   entrouSemPerfil: 'Você entrou, mas não conseguimos abrir a sua conta agora. Recarregue a página em alguns instantes.',
 } as const;
@@ -63,6 +65,14 @@ export function respostaDoCadastro(email: string, codigoErro: string | undefined
 /** Reenvio: a resposta não depende do erro (salvo nenhum), para não contar se o e-mail existe. */
 export function respostaDoReenvio(email: string, agora: number): EstadoAcesso {
   return { etapa: 'codigo', email, aviso: MENSAGENS.reenviado, enviadoEm: agora };
+}
+
+/**
+ * Login com a senha certa e o e-mail ainda sem confirmar: a tela só diz "Enviamos" se o reenvio
+ * deu certo. Aqui a senha já provou a conta, então dizer que o envio falhou não enumera nada.
+ */
+export function respostaDeFaltaConfirmar(email: string, codigoErroReenvio: string | undefined, agora: number): EstadoAcesso {
+  return { etapa: 'codigo', email, aviso: codigoErroReenvio ? MENSAGENS.faltaConfirmarSemEnvio : MENSAGENS.faltaConfirmar, enviadoEm: agora };
 }
 
 /** Erro do login com senha. `email_not_confirmed` só chega com a senha certa: aí vale pedir o código. */

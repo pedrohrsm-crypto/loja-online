@@ -64,6 +64,7 @@ const USUARIOS = [
   { id: '00000000-0000-4000-8000-0000000000c1', email: 'cliente@exemplo.test', senha: 'senha-do-cliente', papel: 'cliente', fatores: [] },
   { id: '00000000-0000-4000-8000-0000000000c2', email: 'pendente@exemplo.test', senha: 'senha-pendente', papel: 'cliente', fatores: [], pendente: true },
   { id: '00000000-0000-4000-8000-0000000000c3', email: 'novo@exemplo.test', senha: null, papel: 'cliente', fatores: [] },
+  { id: '00000000-0000-4000-8000-0000000000c4', email: 'limitado@exemplo.test', senha: 'senha-pendente', papel: 'cliente', fatores: [], pendente: true },
 ];
 const NOVO = USUARIOS[4];
 const CODIGO_CERTO = '123456';
@@ -135,7 +136,8 @@ async function auth(req, res, url) {
     if (corpo.token !== CODIGO_CERTO) return erroAuth(res, 403, 'otp_expired');
     return json(res, 200, sessao(NOVO, 'aal1', corpo.email));
   }
-  if (caminho === '/resend') return json(res, 200, {});
+  // O reenvio para "limitado@" simula o limite de 1 e-mail por minuto do Auth.
+  if (caminho === '/resend') return corpo.email === 'limitado@exemplo.test' ? erroAuth(res, 429, 'over_email_send_rate_limit') : json(res, 200, {});
 
   const quem = lerToken(req);
   if (!quem) return json(res, 401, { code: 401, error_code: 'bad_jwt', msg: 'token inválido' });

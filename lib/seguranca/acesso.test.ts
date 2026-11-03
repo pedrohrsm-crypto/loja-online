@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ERROS_ACESSO, MENSAGENS, normalizarCodigo, respostaDoCadastro, respostaDoCodigo, respostaDoLogin, respostaDoReenvio, respostaDoTotp } from './acesso';
+import { ERROS_ACESSO, MENSAGENS, normalizarCodigo, respostaDeFaltaConfirmar, respostaDoCadastro, respostaDoCodigo, respostaDoLogin, respostaDoReenvio, respostaDoTotp } from './acesso';
 
 const EMAIL = 'ana@exemplo.test';
 const AGORA = 1_700_000_000_000;
@@ -36,6 +36,15 @@ describe('login e códigos', () => {
 
   it('e-mail não confirmado (só chega com a senha certa) leva ao código', () => {
     expect(respostaDoLogin(EMAIL, 'email_not_confirmed')).toBe('confirmar-email');
+  });
+
+  it('e-mail não confirmado: só diz "Enviamos" se o reenvio deu certo (o que a tela promete é verdade)', () => {
+    expect(respostaDeFaltaConfirmar(EMAIL, undefined, AGORA)).toEqual({ etapa: 'codigo', email: EMAIL, aviso: MENSAGENS.faltaConfirmar, enviadoEm: AGORA });
+    for (const erro of ['over_email_send_rate_limit', 'unexpected_failure']) {
+      const r = respostaDeFaltaConfirmar(EMAIL, erro, AGORA);
+      expect(r.aviso, erro).toBe(MENSAGENS.faltaConfirmarSemEnvio);
+      expect(r.aviso, erro).not.toMatch(/Enviamos/);
+    }
   });
 
   it('código errado ou vencido: diz o que fazer e fica na etapa do código', () => {

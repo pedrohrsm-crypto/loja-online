@@ -18,6 +18,7 @@ import {
   MENSAGENS,
   normalizarCodigo,
   respostaDoCadastro,
+  respostaDeFaltaConfirmar,
   respostaDoCodigo,
   respostaDoLogin,
   respostaDoReenvio,
@@ -80,7 +81,7 @@ export async function acessar(_anterior: EstadoAcesso, dados: FormData): Promise
     if (resposta !== 'confirmar-email') return resposta;
     const reenvio = await supabase.auth.resend({ type: 'signup', email });
     if (reenvio.error) log.warn('auth.reenviar', 'reenvio recusado', { codigo: reenvio.error.code });
-    return { etapa: 'codigo', email, aviso: MENSAGENS.faltaConfirmar, enviadoEm: Date.now() };
+    return respostaDeFaltaConfirmar(email, reenvio.error?.code, Date.now());
   }
   return irParaODestino(supabase, data.user.id, volta, email);
 }

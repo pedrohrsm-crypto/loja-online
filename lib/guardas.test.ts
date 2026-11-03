@@ -106,12 +106,22 @@ describe('catracas', () => {
   });
 
   it('o aal é lido com o JWT, que o Auth confere (sem ele, vem do cookie sem conferir)', () => {
-    const achados = FONTES.filter((f) => /getAuthenticatorAssuranceLevel\(\s*\)/.test(semComentarios(f.texto))).map((f) => f.arquivo);
+    // Toda chamada tem de levar um identificador (o JWT); vazio, undefined, null, void 0 ou um
+    // literal reprovam, porque o auth-js cai no cookie sem conferir.
+    const achados: string[] = [];
+    for (const f of FONTES) {
+      for (const m of semComentarios(f.texto).matchAll(/getAuthenticatorAssuranceLevel\(([^)]*)\)/g)) {
+        const arg = m[1].trim();
+        if (!/^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/.test(arg) || arg === 'undefined' || arg === 'null') achados.push(`${f.arquivo}: (${arg})`);
+      }
+    }
     expect(achados).toEqual([]);
   });
 
   it('a rota de volta só é montada por lib/seguranca/destino.ts (open redirect; S-07)', () => {
-    const achados = FONTES.filter((f) => f.arquivo !== 'lib/seguranca/destino.ts' && /[?&]volta=/.test(semComentarios(f.texto))).map((f) => f.arquivo);
+    // O literal `?volta=` e as formas do URLSearchParams: set, append e o objeto do construtor.
+    const MONTA_VOLTA = /[?&]volta=|\.(set|append)\(\s*['"`]volta['"`]|URLSearchParams\(\s*\{[^}]*\bvolta\b/;
+    const achados = FONTES.filter((f) => f.arquivo !== 'lib/seguranca/destino.ts' && MONTA_VOLTA.test(semComentarios(f.texto))).map((f) => f.arquivo);
     expect(achados).toEqual([]);
   });
 

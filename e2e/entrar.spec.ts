@@ -157,6 +157,8 @@ test.describe('segundo fator da dona (aal2)', () => {
   test('desafio: axe, alvos de 44 px e o código inteiro a 140%', async ({ page, context }) => {
     await entrarComo(context, 'admin', 'aal1');
     await page.goto('/entrar/autenticador');
+    // O título chega com o metadata; sem esperar, o axe às vezes roda antes (document-title).
+    await expect(page).toHaveTitle(/Código do autenticador/);
     expect(await axe(page)).toEqual([]);
     await codigoInteiro(page);
   });
@@ -212,11 +214,20 @@ test.describe('código de 6 dígitos no cadastro (D-LO-6)', () => {
     await page.goto('/entrar');
     await entrarComSenha(page, 'pendente@exemplo.test', 'senha-pendente');
     await expect(page.getByRole('heading', { level: 1, name: 'Confirme seu e-mail' })).toBeVisible();
-    await expect(page.getByText('Falta confirmar o seu e-mail')).toBeVisible();
+    await expect(page.getByText('Falta confirmar o seu e-mail. Enviamos um código de 6 números')).toBeVisible();
+  });
+
+  test('reenvio recusado (limite de 1 minuto): a tela não diz que enviou', async ({ page }) => {
+    await page.goto('/entrar');
+    await entrarComSenha(page, 'limitado@exemplo.test', 'senha-pendente');
+    await expect(page.getByRole('heading', { level: 1, name: 'Confirme seu e-mail' })).toBeVisible();
+    await expect(page.getByText('Se o código não chegar, peça um novo em 1 minuto.')).toBeVisible();
+    await expect(page.getByRole('main')).not.toContainText('Enviamos');
   });
 
   test('etapa do código: axe, alvos de 44 px e o código inteiro a 140%', async ({ page }) => {
     await cadastrar(page, 'novo@exemplo.test');
+    await expect(page).toHaveTitle(/Entrar/);
     expect(await axe(page)).toEqual([]);
     await codigoInteiro(page);
   });
