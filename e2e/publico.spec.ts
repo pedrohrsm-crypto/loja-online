@@ -31,7 +31,7 @@ test('o primeiro Tab leva ao "Pular para o conteúdo", visível', async ({ page 
 
 test('área protegida sem sessão vai para /entrar', async ({ page }) => {
   await page.goto('/conta');
-  await expect(page).toHaveURL(/\/entrar$/);
+  await expect(page).toHaveURL(/\/entrar\?volta=%2Fconta$/);
 });
 
 test('webhook sem assinatura é recusado', async ({ request }) => {
