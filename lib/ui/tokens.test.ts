@@ -51,9 +51,9 @@ const PARES: Array<[string, string, number]> = [
   // Aviso de atenção (preço mudou, pedido em confirmação).
   ['cor-atencao', 'cor-fundo', 4.5],
   ['cor-atencao', 'cor-superficie', 4.5],
-  // Destaque terracota (selos): texto sobre o preenchimento e o selo como borda/ícone sobre a página.
+  // Destaque terracota (selos): texto sobre o preenchimento e o texto do selo sobre a página (4,5: é texto).
   ['cor-texto-no-destaque', 'cor-destaque', 4.5],
-  ['cor-destaque', 'cor-fundo', 3],
+  ['cor-destaque', 'cor-fundo', 4.5],
   ['cor-destaque', 'cor-superficie', 3],
   // QR do Pix: ponto escuro sobre fundo claro em todos os temas, senão o leitor não lê.
   ['cor-qr-ponto', 'cor-qr-fundo', 7],

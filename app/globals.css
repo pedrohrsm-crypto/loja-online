@@ -24,7 +24,7 @@
   --cor-sucesso: #2d6a3a;
   --cor-perigo: #9b1c1c;
   --cor-texto-no-perigo: #ffffff;
-  --cor-atencao: #94461f;
+  --cor-atencao: #8a4b12;
   --cor-destaque: #a84f2a;
   --cor-texto-no-destaque: #fffaf0;
   --cor-qr-fundo: #ffffff;
@@ -45,7 +45,7 @@
     --cor-sucesso: #8fd9a0;
     --cor-perigo: #f28b82;
     --cor-texto-no-perigo: #2b0705;
-    --cor-atencao: #e9a27a;
+    --cor-atencao: #e0a86a;
     --cor-destaque: #d98560;
     --cor-texto-no-destaque: #1f1209;
     --cor-qr-fundo: #ffffff;
@@ -66,7 +66,7 @@
   --cor-sucesso: #8fd9a0;
   --cor-perigo: #f28b82;
   --cor-texto-no-perigo: #2b0705;
-  --cor-atencao: #e9a27a;
+  --cor-atencao: #e0a86a;
   --cor-destaque: #d98560;
   --cor-texto-no-destaque: #1f1209;
   --cor-qr-fundo: #ffffff;
@@ -107,13 +107,19 @@ body {
   line-height: 1.5;
 }
 
-/* Títulos em serifa; o corpo fica sem serifa. Letra mais solta em 360 px: leitura antes de efeito. */
-h1,
-h2,
-h3 {
-  font-family: var(--font-titulo);
-  letter-spacing: -0.005em;
-  line-height: 1.2;
+/* Títulos em serifa; o corpo fica sem serifa. Em @layer base, para as utilidades do Tailwind vencerem.
+   A letra fica um pouco mais apertada (-0.005em) e a entrelinha em 1.2, para títulos de 2 linhas em 360 px. */
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-titulo);
+    letter-spacing: -0.005em;
+    line-height: 1.2;
+    /* As classes text-* do Tailwind trazem a própria entrelinha; --tw-leading mantém os 1.2 dos títulos
+       (a altura aprovada a 140%) e deixa uma classe leading-* explícita vencer. */
+    --tw-leading: 1.2;
+  }
 }
 
 /* Foco sempre visível, na cor de foco do tema, só para teclado. */
