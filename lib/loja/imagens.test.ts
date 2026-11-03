@@ -30,7 +30,7 @@ describe('imagens dos produtos', () => {
       }
       if (statSync(arquivo).size > LIMITE_BYTES) problemas.push(`${slug}: ${statSync(arquivo).size} bytes`);
       const cabeca = readFileSync(arquivo).subarray(0, 12).toString('latin1');
-      if (!/^RIFF.{4}WEBP$/s.test(cabeca)) problemas.push(`${slug}: não é WebP`);
+      if (!/^RIFF[\s\S]{4}WEBP$/.test(cabeca)) problemas.push(`${slug}: não é WebP`);
       if (alt.trim().split(/\s+/).length < 4 || /^(foto|imagem)\b/i.test(alt.trim())) problemas.push(`${slug}: texto alternativo pobre`);
     }
     expect(problemas).toEqual([]);
@@ -40,7 +40,7 @@ describe('imagens dos produtos', () => {
     const vista = readFileSync(join(RAIZ, 'components/loja/produto-vista.tsx'), 'utf8');
     expect(ROTULO_IMAGEM_ILUSTRATIVA).toBe('Imagem ilustrativa');
     expect(vista).toMatch(/ROTULO_IMAGEM_ILUSTRATIVA/);
-    expect(vista).toMatch(/<Image\b[^>]*sizes=/s);
+    expect(vista).toMatch(/<Image\b[^>]*sizes=/);
     expect(vista.match(/\bpreload\b/g)?.length).toBe(1);
     expect(vista).not.toMatch(/<img\b/);
   });
