@@ -9,57 +9,66 @@
 :root {
   /* Altura da barra inferior de navegação: a barra de compra fixa sobe até ela. */
   --altura-navegacao: 3.5rem;
-  --cor-fundo: #ffffff;
-  --cor-superficie: #f4f5f7;
-  --cor-texto: #16181d;
-  --cor-texto-suave: #4a5160;
-  --cor-borda: #767d8c;
-  --cor-primaria: #1f4fd1;
-  --cor-texto-na-primaria: #ffffff;
-  --cor-foco: #b3261e;
-  --cor-erro: #b3261e;
-  --cor-sucesso: #1e6b34;
+  /* Acabamento dos cartões: raio e sombra suave (a sombra deriva do texto do tema, sem cor própria). */
+  --raio-cartao: 1rem;
+  --sombra-cartao: 0 0.0625rem 0.125rem color-mix(in srgb, var(--cor-texto) 10%, transparent), 0 0.25rem 0.875rem color-mix(in srgb, var(--cor-texto) 8%, transparent);
+  --cor-fundo: #faf6ec;
+  --cor-superficie: #efe7d4;
+  --cor-texto: #262820;
+  --cor-texto-suave: #524e3c;
+  --cor-borda: #807860;
+  --cor-primaria: #3b5a43;
+  --cor-texto-na-primaria: #faf6ec;
+  --cor-foco: #8f3a1c;
+  --cor-erro: #a3281c;
+  --cor-sucesso: #2d6a3a;
   --cor-perigo: #9b1c1c;
   --cor-texto-no-perigo: #ffffff;
   --cor-atencao: #8a4b12;
+  --cor-destaque: #a84f2a;
+  --cor-texto-no-destaque: #fffaf0;
   --cor-qr-fundo: #ffffff;
   --cor-qr-ponto: #16181d;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-tema="claro"]) {
-    --cor-fundo: #111318;
-    --cor-superficie: #1c1f26;
-    --cor-texto: #eef0f4;
-    --cor-texto-suave: #b4bac6;
-    --cor-borda: #8a91a0;
-    --cor-primaria: #8fb0ff;
-    --cor-texto-na-primaria: #0b1220;
-    --cor-foco: #ffb4a8;
+    --cor-fundo: #171a14;
+    --cor-superficie: #22261d;
+    --cor-texto: #f1ede0;
+    --cor-texto-suave: #c3bea8;
+    --cor-borda: #8b8f76;
+    --cor-primaria: #a8c8ad;
+    --cor-texto-na-primaria: #12200f;
+    --cor-foco: #f2a98a;
     --cor-erro: #ffb4a8;
     --cor-sucesso: #8fd9a0;
     --cor-perigo: #f28b82;
     --cor-texto-no-perigo: #2b0705;
     --cor-atencao: #e0a86a;
+    --cor-destaque: #d98560;
+    --cor-texto-no-destaque: #1f1209;
     --cor-qr-fundo: #ffffff;
     --cor-qr-ponto: #16181d;
   }
 }
 
 :root[data-tema="escuro"] {
-  --cor-fundo: #111318;
-  --cor-superficie: #1c1f26;
-  --cor-texto: #eef0f4;
-  --cor-texto-suave: #b4bac6;
-  --cor-borda: #8a91a0;
-  --cor-primaria: #8fb0ff;
-  --cor-texto-na-primaria: #0b1220;
-  --cor-foco: #ffb4a8;
+  --cor-fundo: #171a14;
+  --cor-superficie: #22261d;
+  --cor-texto: #f1ede0;
+  --cor-texto-suave: #c3bea8;
+  --cor-borda: #8b8f76;
+  --cor-primaria: #a8c8ad;
+  --cor-texto-na-primaria: #12200f;
+  --cor-foco: #f2a98a;
   --cor-erro: #ffb4a8;
   --cor-sucesso: #8fd9a0;
   --cor-perigo: #f28b82;
   --cor-texto-no-perigo: #2b0705;
   --cor-atencao: #e0a86a;
+  --cor-destaque: #d98560;
+  --cor-texto-no-destaque: #1f1209;
   --cor-qr-fundo: #ffffff;
   --cor-qr-ponto: #16181d;
 }
@@ -78,9 +87,14 @@
   --color-perigo: var(--cor-perigo);
   --color-texto-no-perigo: var(--cor-texto-no-perigo);
   --color-atencao: var(--cor-atencao);
+  --color-destaque: var(--cor-destaque);
+  --color-texto-no-destaque: var(--cor-texto-no-destaque);
   --color-qr-fundo: var(--cor-qr-fundo);
   --color-qr-ponto: var(--cor-qr-ponto);
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius-cartao: var(--raio-cartao);
+  --shadow-cartao: var(--sombra-cartao);
+  --font-sans: var(--fonte-texto), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-titulo: var(--fonte-titulo), Georgia, "Times New Roman", serif;
 }
 
 html {
@@ -91,6 +105,21 @@ html {
 body {
   font-family: var(--font-sans);
   line-height: 1.5;
+}
+
+/* Títulos em serifa; o corpo fica sem serifa. Em @layer base, para as utilidades do Tailwind vencerem.
+   A letra fica um pouco mais apertada (-0.005em) e a entrelinha em 1.2, para títulos de 2 linhas em 360 px. */
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-titulo);
+    letter-spacing: -0.005em;
+    line-height: 1.2;
+    /* As classes text-* do Tailwind trazem a própria entrelinha; --tw-leading mantém os 1.2 dos títulos
+       (a altura aprovada a 140%) e deixa uma classe leading-* explícita vencer. */
+    --tw-leading: 1.2;
+  }
 }
 
 /* Foco sempre visível, na cor de foco do tema, só para teclado. */
