@@ -2,51 +2,13 @@
 // pedidos, sempre em 360 px (o ponto de partida do cliente), com axe, transbordo, alvos de 44 px e a
 // ação principal visível sem rolar a 140% de fonte. O catálogo vem do Supabase FALSO
 // (e2e/apoio/supabase-falso.mjs): o código real de lib/catalogo/ roda por cima, sem banco.
-import { expect, test, type BrowserContext, type Page } from '@playwright/test';
-import AxeBuilder from '@axe-core/playwright';
-import { alvosPequenos, ampliar, inteiroEDescoberto, transbordo } from './apoio/medir';
+import { expect, test } from '@playwright/test';
+import { axe, entrarComo, semearCarrinho, semSobraNemAlvoPequeno, visivelSemRolar } from './apoio/comum';
 
 test.use({ viewport: { width: 360, height: 740 } });
 
-const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 const PRECO_22 = /R\$\s22,00/;
 const PRECO_30 = /R\$\s30,00/;
-
-async function axe(page: Page) {
-  // No fim da página: as barras fixas ficam na posição natural e não cobrem o rodapé (o axe conta alvo coberto como pequeno).
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-  const r = await new AxeBuilder({ page }).withTags(TAGS).analyze();
-  return r.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ") + " " + (n.any[0]?.message ?? "")).join(" | ")}`);
-}
-
-async function semSobraNemAlvoPequeno(page: Page) {
-  await ampliar(page);
-  expect(await transbordo(page), 'rolagem horizontal a 140%').toBeLessThanOrEqual(0);
-  expect(await alvosPequenos(page), 'alvos com menos de 44 px').toEqual([]);
-}
-
-async function visivelSemRolar(page: Page, alvo: ReturnType<Page['getByRole']>) {
-  await ampliar(page);
-  await expect(alvo).toBeInViewport({ ratio: 1 });
-  expect(await page.evaluate(() => window.scrollY)).toBe(0);
-  expect(await inteiroEDescoberto(alvo), 'o alvo está coberto por uma barra fixa').toBe(true);
-}
-
-// Sessão do Supabase falso: o cookie que o @supabase/ssr lê, com o token que o falso reconhece.
-async function entrarComo(context: BrowserContext, papel: 'admin' | 'cliente') {
-  const sessao = {
-    access_token: `token-${papel}`, refresh_token: 'renovacao', token_type: 'bearer', expires_in: 3600, expires_at: 4102444800,
-    user: { id: papel === 'admin' ? '00000000-0000-4000-8000-0000000000a1' : '00000000-0000-4000-8000-0000000000c1', aud: 'authenticated', role: 'authenticated', email: `${papel}@exemplo.test` },
-  };
-  const valor = 'base64-' + Buffer.from(JSON.stringify(sessao)).toString('base64url');
-  // O nome do cookie vem do começo do domínio da URL do Supabase (convenção do @supabase/ssr).
-  const ref = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://exemplo.supabase.co').hostname.split('.')[0];
-  await context.addCookies([{ name: `sb-${ref}-auth-token`, value: valor, domain: '127.0.0.1', path: '/' }]);
-}
-
-async function semearCarrinho(page: Page, itens: unknown[]) {
-  await page.addInitScript((texto) => window.localStorage.setItem('alecrim:carrinho:v1', texto), JSON.stringify(itens));
-}
 
 const ITEM_ALECRIM = { variacaoId: 'v-ale-90', slug: 'sabonete-artesanal', nome: 'Sabonete artesanal', aroma: 'alecrim', tamanho: '90 g', precoCentavos: 2200, quantidade: 2 };
 
@@ -198,14 +160,13 @@ test.describe('Carrinho', () => {
     await semSobraNemAlvoPequeno(page);
   });
 
-  test('"Finalizar compra" fica visível sem rolar a 140% e diz a verdade sobre o pagamento', async ({ page }) => {
+  test('"Finalizar compra" fica visível sem rolar a 140% e leva à entrega (sem sessão, a /entrar)', async ({ page }) => {
     await semearCarrinho(page, [ITEM_ALECRIM]);
     await page.goto('/carrinho');
     const finalizar = page.getByRole('button', { name: 'Finalizar compra' });
     await visivelSemRolar(page, finalizar);
     await finalizar.click();
-    await expect(page.getByText('O pagamento ainda não está disponível')).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Ver a tela de pagamento (exemplo)' })).toHaveAttribute('href', '/checkout/pagamento/1042');
+    await expect(page).toHaveURL(/\/entrar$/);
   });
 
   test('item esgotado e preço que mudou: marca as linhas e "continuar" limpa o carrinho', async ({ page }) => {

@@ -38,6 +38,21 @@ const PRODUTOS = {
   ]),
 };
 
+// Checkout (#27): produto lido só pelo slug (não entra na vitrine), com ids no formato uuid, como o
+// banco real. A função criar_pedido falsa responde pelo id da variação: uma esgota na hora da
+// reserva (outro comprador levou: T13 visto pela tela), outra simula a função ainda inexistente.
+const VARIACAO_OK = 'a0000000-0000-4000-8000-000000000001';
+const VARIACAO_ESGOTA_NA_RESERVA = 'a0000000-0000-4000-8000-000000000002';
+const VARIACAO_BANCO_FORA = 'a0000000-0000-4000-8000-000000000003';
+const PEDIDO_CRIADO = 'b0000000-0000-4000-8000-0000000004f2';
+const SO_POR_SLUG = {
+  'oleo-corporal': base('p3', 'oleo-corporal', 'Óleo corporal', { slug: 'oleos', nome: 'Óleos' }, [
+    v(VARIACAO_OK, 'p3', 'lavanda', '100 ml', 5200, 5, 'OLE-COR-LAV-100'),
+    v(VARIACAO_ESGOTA_NA_RESERVA, 'p3', 'alecrim', '100 ml', 5200, 4, 'OLE-COR-ALE-100'),
+    v(VARIACAO_BANCO_FORA, 'p3', 'sem fragrância', '100 ml', 5000, 6, 'OLE-COR-SEM-100'),
+  ]),
+};
+
 const FRETES = [
   { nome: 'Mesma cidade e região metropolitana', cep_inicio: '01000000', cep_fim: '09999999', modo: 'motoboy', valor_centavos: 1500, prazo_texto: '1 a 2 dias úteis, combinado por WhatsApp' },
   { nome: 'Retirada no ateliê', cep_inicio: '01000000', cep_fim: '09999999', modo: 'retirada', valor_centavos: 0, prazo_texto: 'a combinar por WhatsApp' },
@@ -65,10 +80,27 @@ const servidor = createServer((req, res) => {
 
   if (url.pathname === '/saude') return json(res, 200, { ok: true });
 
+  if (url.pathname === '/rest/v1/rpc/criar_pedido' && req.method === 'POST') {
+    let corpo = '';
+    req.on('data', (parte) => { corpo += parte; });
+    req.on('end', () => {
+      let args;
+      try { args = JSON.parse(corpo); } catch { return json(res, 400, { code: '22P02', message: 'json inválido' }); }
+      const ids = (args.p_itens ?? []).map((i) => i.variacao_id);
+      if (ids.includes(VARIACAO_BANCO_FORA)) return json(res, 404, { code: 'PGRST202', message: 'Could not find the function public.criar_pedido', details: null, hint: null });
+      if (ids.includes(VARIACAO_ESGOTA_NA_RESERVA)) {
+        return json(res, 200, { ok: false, motivo: 'mudou', itens: [{ variacao_id: VARIACAO_ESGOTA_NA_RESERVA, tipo: 'esgotou', disponivel: 0 }] });
+      }
+      const expira = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+      return json(res, 200, { ok: true, pedido_id: PEDIDO_CRIADO, expira_em: expira, total_centavos: args.p_total_centavos, reaproveitado: false, substituido: null });
+    });
+    return;
+  }
+
   if (url.pathname === '/rest/v1/produtos') {
     const slug = (q.get('slug') ?? '').replace(/^eq\./, '');
     if (slug === 'quebrado') return json(res, 500, { code: 'XX000', message: 'falha simulada do banco', details: null, hint: null });
-    const p = PRODUTOS[slug];
+    const p = PRODUTOS[slug] ?? SO_POR_SLUG[slug];
     if (unico) return p ? json(res, 200, p) : json(res, 406, SEM_LINHA);
     return json(res, 200, p ? [p] : slug ? [] : Object.values(PRODUTOS));
   }
