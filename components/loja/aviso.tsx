@@ -17,7 +17,7 @@ const TITULO: Record<Tipo, string> = {
 
 export function Aviso({ tipo = 'info', titulo, children, urgente = false, id }: { tipo?: Tipo; titulo: string; children?: ReactNode; urgente?: boolean; id?: string }) {
   return (
-    <div id={id} role={urgente ? 'alert' : 'status'} className={`space-y-1 rounded-md border border-borda border-l-4 bg-superficie p-3 ${BORDA[tipo]}`}>
+    <div id={id} role={urgente ? 'alert' : 'status'} className={`space-y-1 rounded-cartao border border-borda border-l-4 bg-superficie p-4 shadow-cartao ${BORDA[tipo]}`}>
       <p className={`font-semibold ${TITULO[tipo]}`}>{titulo}</p>
       {children ? <div className="text-sm text-texto-suave">{children}</div> : null}
     </div>

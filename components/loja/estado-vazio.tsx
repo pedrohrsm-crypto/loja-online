@@ -5,7 +5,7 @@ import { BarraAcao } from './barra-acao';
 export function EstadoVazio({ titulo, texto, children }: { titulo: string; texto: string; children?: ReactNode }) {
   return (
     <div className="space-y-4">
-      <div className="space-y-3 rounded-md border border-borda bg-superficie p-4 text-center">
+      <div className="space-y-3 rounded-cartao border border-borda bg-superficie p-6 text-center shadow-cartao">
         <h1 className="text-xl font-bold">{titulo}</h1>
         <p className="text-texto-suave">{texto}</p>
       </div>

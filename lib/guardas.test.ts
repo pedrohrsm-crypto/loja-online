@@ -64,6 +64,21 @@ describe('catracas', () => {
     expect(achados).toEqual([]);
   });
 
+  it('o token de atenção (aviso) só aparece nos usos de aviso, numa lista fechada (04, 6.6; 2ª ocorrência)', () => {
+    // Token nomeado pelo papel: "atenção" é aviso (Aviso, "Esgotado" e "Indisponível" no carrinho, status do
+    // "adicionado"). Marca e selo usam "destaque". Usos permitidos de text-/border-l-/bg- atencao, por arquivo.
+    const PERMITIDOS: Record<string, number> = {
+      'components/loja/aviso.tsx': 2,
+      'components/loja/carrinho-vista.tsx': 3,
+      'components/loja/produto-vista.tsx': 1,
+    };
+    const USO = /\b(?:text|border(?:-l)?|bg)-atencao\b/g;
+    const achados = FONTES.map((f) => ({ arquivo: f.arquivo, n: f.texto.match(USO)?.length ?? 0 }))
+      .filter((f) => f.n !== (PERMITIDOS[f.arquivo] ?? 0))
+      .map((f) => `${f.arquivo}: ${f.n} uso(s), permitido ${PERMITIDOS[f.arquivo] ?? 0}`);
+    expect(achados).toEqual([]);
+  });
+
   it('mensagem crua do banco nunca vai para o usuário', () => {
     const achados = FONTES.filter((f) => f.arquivo.startsWith('app/') && /error\.message|erro\.message/.test(f.texto)).map((f) => f.arquivo);
     expect(achados).toEqual([]);
