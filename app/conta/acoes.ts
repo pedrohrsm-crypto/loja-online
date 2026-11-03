@@ -9,6 +9,7 @@ import { escrever } from '@/lib/supabase/escrever';
 import { iniciarCheckout } from '@/lib/pagamentos/checkout';
 import { PRODUTOS } from '@/lib/pagamentos/produtos';
 import { log } from '@/lib/observabilidade/logger';
+import { cancelarPedidosComItensDoTitular } from '@/lib/pedidos/conta';
 
 export type Estado = { erro?: string; ok?: string; nome?: string };
 
@@ -48,8 +49,11 @@ export async function excluirConta(_a: Estado, dados: FormData): Promise<Estado>
     return { erro: 'Digite EXCLUIR para confirmar.' };
   }
   const admin = clienteAdmin();
-  // Pedido aberto não pode ser pago depois que a conta sumir.
-  const cancelou = await admin.from('pedidos').update({ status: 'cancelado' }).eq('usuario_id', usuario.id).eq('status', 'aberto').select('id');
+  // Pedido aberto não pode ser pago depois que a conta sumir. Primeiro os pedidos com itens, pelo
+  // caminho que devolve a reserva de estoque (#27); depois os do starter, de produto único.
+  const comItens = await cancelarPedidosComItensDoTitular(admin, usuario.id);
+  if (!comItens.ok) return { erro: 'Não foi possível excluir a conta agora. Tente de novo.' };
+  const cancelou = await admin.from('pedidos').update({ status: 'cancelado' }).eq('usuario_id', usuario.id).eq('status', 'aberto').not('produto', 'is', null).select('id');
   if (cancelou.error) {
     log.error('conta.excluir', 'falha ao cancelar pedidos abertos', { codigo: cancelou.error.code });
     return { erro: 'Não foi possível excluir a conta agora. Tente de novo.' };

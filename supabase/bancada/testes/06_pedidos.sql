@@ -152,6 +152,38 @@ begin
   end loop;
 end $$;
 
+-- ---------------------------------------------------------------- B1: o UPDATE direto não prende a reserva
+-- Os dois UPDATE do starter, exatamente como estão em app/conta/acoes.ts (exclusão de conta) e em
+-- app/api/cron/reconciliar/route.ts (abandono de 48 h), sobre um pedido com itens: a guarda
+-- pedidos_cancelado_devolve_reserva recusa. O pagamento ('pago') continua passando.
+do $$
+declare
+  p_id uuid;
+  oleo integer := pg_temp.estoque('OLE-BAN-LAR-100');
+begin
+  select id into p_id from public.pedidos where usuario_id = '00000000-0000-0000-0000-0000000000f2' and status = 'aberto';
+  assert p_id is not null, 'f2 sem pedido aberto para o teste da guarda';
+  begin
+    update public.pedidos set status = 'cancelado' where usuario_id = '00000000-0000-0000-0000-0000000000f2' and status = 'aberto';
+    raise exception 'o UPDATE da exclusão de conta cancelou sem devolver a reserva';
+  exception when check_violation then null;
+  end;
+  begin
+    update public.pedidos set status = 'cancelado' where id = p_id and status = 'aberto';
+    raise exception 'o UPDATE da reconciliação cancelou sem devolver a reserva';
+  exception when check_violation then null;
+  end;
+  assert (select status from public.pedidos where id = p_id) = 'aberto', 'o pedido saiu de aberto';
+  assert pg_temp.estoque('OLE-BAN-LAR-100') = oleo, 'o estoque mexeu';
+  -- O caminho certo devolve; o pagamento não precisa da devolução (savepoint: volta a aberto depois).
+  begin
+    update public.pedidos set status = 'pago', pago_em = now() where id = p_id and status = 'aberto';
+    assert found, 'a guarda recusou o pagamento';
+    raise exception 'desfaz' using errcode = 'P0099';
+  exception when sqlstate 'P0099' then null;
+  end;
+end $$;
+
 -- ---------------------------------------------------------------- expiração monotônica
 do $$
 declare

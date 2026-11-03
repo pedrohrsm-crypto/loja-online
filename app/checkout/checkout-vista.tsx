@@ -208,7 +208,7 @@ export function CheckoutVista() {
           <span className="text-lg font-bold">{formatarPreco(total)}</span>
         </div>
         <button type="submit" form="form-entrega" className={estiloBotao('primario', 'w-full')} disabled={!frete || pendente}>
-          {pendente ? 'Reservando os itens…' : 'Ir para o pagamento'}
+          {pendente ? 'Reservando os itens…' : resultado && !resultado.ok && resultado.motivo === 'indisponivel' ? 'Tentar de novo' : 'Reservar os itens'}
         </button>
       </BarraAcao>
     </div>

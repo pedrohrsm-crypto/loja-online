@@ -48,11 +48,11 @@ test.describe('com sessão', () => {
     await semSobraNemAlvoPequeno(page);
   });
 
-  test('"Ir para o pagamento" fica visível sem rolar a 140%', async ({ page }) => {
+  test('"Reservar os itens" fica visível sem rolar a 140%', async ({ page }) => {
     await semearCarrinho(page, [LAVANDA], '20040-002');
     await page.goto('/checkout');
     await expect(page.getByRole('radio', { name: /Correios/ })).toBeChecked();
-    await visivelSemRolar(page, page.getByRole('button', { name: 'Ir para o pagamento' }));
+    await visivelSemRolar(page, page.getByRole('button', { name: 'Reservar os itens' }));
   });
 
   test('cria o pedido: reserva os itens, mostra o número e o prazo, e diz que nada foi cobrado', async ({ page }) => {
@@ -61,7 +61,7 @@ test.describe('com sessão', () => {
     await page.getByLabel('Endereço').fill('Rua de Exemplo, 10, ap. 2');
     await page.getByLabel('Quem recebe').fill('Ana Exemplo');
     await page.getByLabel('WhatsApp para contato').fill('(21) 90000-0000');
-    await page.getByRole('button', { name: 'Ir para o pagamento' }).click();
+    await page.getByRole('button', { name: 'Reservar os itens' }).click();
     await expect(page.getByRole('heading', { name: 'Pedido reservado' })).toBeVisible();
     await expect(page.getByText(/Pedido nº B0000000 · R\$\s134,00/)).toBeVisible();
     await expect(page.getByText(/Separamos os seus itens até as \d{2}:\d{2}\. Nada foi cobrado/)).toBeVisible();
@@ -72,7 +72,7 @@ test.describe('com sessão', () => {
     await semearCarrinho(page, [LAVANDA], '20040-002');
     await page.goto('/checkout');
     await page.getByLabel('WhatsApp para contato').fill('123');
-    await page.getByRole('button', { name: 'Ir para o pagamento' }).click();
+    await page.getByRole('button', { name: 'Reservar os itens' }).click();
     await expect(page.getByText('Digite o WhatsApp com DDD. Exemplo: (11) 90000-0000.')).toBeVisible();
     await expect(page.getByText('Digite rua, número e complemento.')).toBeVisible();
     await expect(page.getByLabel('WhatsApp para contato')).toHaveValue('123');
@@ -84,7 +84,7 @@ test.describe('com sessão', () => {
     await page.goto('/checkout');
     await expect(page.getByRole('radio', { name: /Retirada/ })).toBeChecked();
     await page.getByLabel('WhatsApp para combinar').fill('(11) 90000-0000');
-    await page.getByRole('button', { name: 'Ir para o pagamento' }).click();
+    await page.getByRole('button', { name: 'Reservar os itens' }).click();
     await expect(page).toHaveURL(/\/carrinho$/);
   });
 
@@ -101,9 +101,9 @@ test.describe('com sessão', () => {
     await semearCarrinho(page, [BANCO_SEM_FUNCAO], '01310-100');
     await page.goto('/checkout');
     await page.getByLabel('WhatsApp para combinar').fill('(11) 90000-0000');
-    await page.getByRole('button', { name: 'Ir para o pagamento' }).click();
+    await page.getByRole('button', { name: 'Reservar os itens' }).click();
     await expect(page.getByRole('alert').filter({ hasText: 'Não deu para criar o pedido' })).toContainText('Nada foi cobrado');
-    await expect(page.getByRole('button', { name: 'Ir para o pagamento' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Tentar de novo' })).toBeEnabled();
   });
 
   test('carrinho vazio: diz que está vazio e leva aos produtos', async ({ page }) => {

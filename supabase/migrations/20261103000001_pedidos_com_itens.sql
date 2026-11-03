@@ -58,6 +58,14 @@ alter table public.pedidos add constraint pedidos_legado_ou_com_itens check (
 alter table public.pedidos add constraint pedidos_reserva_so_fora_de_aberto check (
   reserva_devolvida_em is null or status <> 'aberto'
 );
+-- Guarda que falha fechado: pedido com itens só vira 'cancelado' junto com a devolução da reserva.
+-- Um UPDATE direto para 'cancelado' (o do starter na reconciliação ou na exclusão de conta) é
+-- recusado, em vez de deixar o estoque preso. 'pago' passa: o estoque já saiu na reserva. CHECK, e
+-- não trigger que devolve sozinho: a regra fica declarada e à vista, sem efeito escondido, e quem
+-- cancela passa pelo caminho único (cancelar_pedido_aberto), que devolve uma vez só.
+alter table public.pedidos add constraint pedidos_cancelado_devolve_reserva check (
+  produto is not null or status <> 'cancelado' or reserva_devolvida_em is not null
+);
 
 -- Um pedido com itens ABERTO por comprador: duas abas caem no mesmo pedido (T12). O índice
 -- do starter (um aberto por usuário e produto) continua valendo só para as linhas antigas.

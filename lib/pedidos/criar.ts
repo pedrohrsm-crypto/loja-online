@@ -131,7 +131,8 @@ export async function criarPedido(bruto: unknown, portas: PortasCriarPedido): Pr
   }
   if (resposta.error) {
     // PGRST202 / 42883: a função ainda não existe (migration não aplicada). Mesmo tratamento.
-    log.error('pedidos.criar', 'criar_pedido falhou', { codigo: resposta.error.code, erro: resposta.error.message, dica: resposta.error.hint });
+    // Só o código: a mensagem e a dica do Postgres podem trazer valores da linha (dado pessoal).
+    log.error('pedidos.criar', 'criar_pedido falhou', { codigo: resposta.error.code });
     return { ok: false, motivo: 'indisponivel' };
   }
   const lido = lerResposta(resposta.data);
