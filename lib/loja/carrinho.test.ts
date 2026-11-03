@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
-  adicionar, contarUnidades, continuarComDisponiveis, definirQuantidade, lerCarrinhoSeguro, limitarQuantidade, QUANTIDADE_MAXIMA,
-  linhaEfetiva, remover, situacaoDoItem, subtotalCentavos, tetoDoItem, type ItemCarrinho,
+  adicionar, contarUnidades, continuarComDisponiveis, definirQuantidade, lerCarrinhoSeguro, limitarQuantidade,
+  linhaEfetiva, remover, situacaoDoItem, subtotalCentavos, type ItemCarrinho,
 } from './carrinho';
+import { QUANTIDADE_MAXIMA, tetoDoItem } from '@/lib/pedidos/regras';
 
 const SAB: ItemCarrinho = { variacaoId: 'v1', slug: 'sabonete-artesanal', nome: 'Sabonete artesanal', aroma: 'lavanda', tamanho: '90 g', precoCentavos: 2000, quantidade: 2 };
 const VELA: ItemCarrinho = { variacaoId: 'v2', slug: 'vela-aromatica', nome: 'Vela aromática', aroma: 'alecrim', tamanho: '150 g', precoCentavos: 4500, quantidade: 1 };

@@ -1,16 +1,18 @@
 'use client';
 
 // Carrinho (L3). Vive no navegador; o catálogo de hoje é conferido por uma Server Action de leitura.
-// Sem checkout real: o botão final diz a verdade sobre o que ainda não existe.
+// "Finalizar compra" leva à entrega (tela 6), onde o servidor cria o pedido e reserva o estoque.
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { formatarPreco } from '@/lib/catalogo/preco';
 import type { FreteRegiao } from '@/lib/catalogo/tipos';
-import { conferirCarrinho, type ResultadoConferencia } from '@/lib/loja/acoes';
+import { useConferencia } from '@/lib/loja/conferencia';
 import {
-  continuarComDisponiveis, contarUnidades, definirQuantidade, linhaEfetiva, QUANTIDADE_MAXIMA, remover,
-  situacaoDoItem, subtotalCentavos, tetoDoItem, type Situacao,
+  continuarComDisponiveis, contarUnidades, definirQuantidade, linhaEfetiva, remover,
+  situacaoDoItem, subtotalCentavos, type Situacao,
 } from '@/lib/loja/carrinho';
+import { QUANTIDADE_MAXIMA, tetoDoItem, totalDoPedido } from '@/lib/pedidos/regras';
 import { gravarCarrinho, useCarrinho } from '@/lib/loja/carrinho-armazenamento';
 import { textoValorFrete } from '@/lib/loja/frete-texto';
 import { estiloBotao } from '@/lib/ui/botao';
@@ -24,21 +26,8 @@ export function CarrinhoVista() {
   const carrinho = useCarrinho();
   const itens = carrinho?.itens ?? null;
   const [frete, setFrete] = useState<FreteRegiao | null>(null);
-  const [mostrarCheckout, setMostrarCheckout] = useState(false);
-  const [conferencia, setConferencia] = useState<{ chave: string; resultado: ResultadoConferencia } | null>(null);
-
-  const chave = itens && itens.length > 0 ? [...new Set(itens.map((i) => i.slug))].sort().join(',') : null;
-  useEffect(() => {
-    if (!chave) return;
-    let cancelado = false;
-    conferirCarrinho(chave.split(','))
-      .then((resultado) => !cancelado && setConferencia({ chave, resultado }))
-      // Falha de rede ou da ação: a tela diz que não conferiu; nunca finge que está tudo certo.
-      .catch(() => !cancelado && setConferencia({ chave, resultado: { ok: false } }));
-    return () => {
-      cancelado = true;
-    };
-  }, [chave]);
+  const router = useRouter();
+  const conferido = useConferencia(itens);
 
   if (itens === null) {
     return (
@@ -59,12 +48,11 @@ export function CarrinhoVista() {
     );
   }
 
-  const conferido = conferencia?.chave === chave ? conferencia.resultado : null;
   const atuais = conferido?.ok ? conferido.atuais : undefined;
   const situacoes = itens.map((i) => (atuais ? situacaoDoItem(i, atuais[i.variacaoId]) : OK));
   const comProblema = situacoes.some((s) => s.tipo !== 'ok');
   const subtotal = subtotalCentavos(itens, atuais);
-  const total = subtotal + (frete?.valorCentavos ?? 0);
+  const total = totalDoPedido(subtotal, frete?.valorCentavos ?? null);
   const unidades = contarUnidades(itens, atuais);
   const nada = subtotal === 0;
 
@@ -175,15 +163,6 @@ export function CarrinhoVista() {
         </div>
       </dl>
 
-      {mostrarCheckout ? (
-        <Aviso titulo="O pagamento ainda não está disponível">
-          Esta é uma versão de demonstração: o checkout e o pagamento chegam nas próximas etapas do projeto. Seus itens continuam salvos neste aparelho.{' '}
-          <Link href="/checkout/pagamento/1042" className="font-semibold underline underline-offset-4">
-            Ver a tela de pagamento (exemplo)
-          </Link>
-        </Aviso>
-      ) : null}
-
       <div data-testid="barra-total" className="sticky bottom-(--altura-navegacao) z-30 -mx-4 space-y-2 border-t border-borda bg-fundo px-4 py-3">
         <div className="flex items-baseline justify-between gap-3">
           <strong>{frete ? 'Total' : 'Total sem frete'}</strong>
@@ -194,7 +173,7 @@ export function CarrinhoVista() {
             Continuar com o que está disponível
           </button>
         ) : (
-          <button type="button" className={estiloBotao('primario', 'w-full')} disabled={nada} onClick={() => setMostrarCheckout(true)}>
+          <button type="button" className={estiloBotao('primario', 'w-full')} disabled={nada} onClick={() => router.push('/checkout')}>
             Finalizar compra
           </button>
         )}

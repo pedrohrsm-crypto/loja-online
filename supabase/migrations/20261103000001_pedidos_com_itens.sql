@@ -204,8 +204,9 @@ declare
   n integer;
 begin
   if p_usuario_id is null then raise exception 'pedido sem comprador' using errcode = '22023'; end if;
-  if p_itens is null or jsonb_typeof(p_itens) <> 'array' or jsonb_array_length(p_itens) not between 1 and 20 then
-    raise exception 'pedido precisa de 1 a 20 itens' using errcode = '22023';
+  -- 100 é teto técnico contra abuso; o limite da loja (MAXIMO_ITENS_NO_PEDIDO) mora em lib/pedidos/regras.ts.
+  if p_itens is null or jsonb_typeof(p_itens) <> 'array' or jsonb_array_length(p_itens) not between 1 and 100 then
+    raise exception 'pedido precisa de pelo menos 1 item (e no máximo 100)' using errcode = '22023';
   end if;
   if exists (
     select 1 from jsonb_to_recordset(p_itens) as i (variacao_id uuid, quantidade integer, preco_centavos integer)

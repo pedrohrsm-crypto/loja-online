@@ -76,7 +76,7 @@ describe('guardas da interface', () => {
   it('o rótulo do modo de entrega, o teto por item e as mensagens de WhatsApp moram num lugar só', () => {
     const rotulo = FONTES.filter((f) => /\bROTULO_MODO\s*[:=]/.test(f.texto)).map((f) => f.arquivo);
     expect(rotulo).toEqual(['lib/loja/frete-texto.ts']);
-    const teto = FONTES.filter((f) => f.arquivo !== 'lib/loja/carrinho.ts' && /Math\.min\([^)]*QUANTIDADE_MAXIMA\)/.test(f.texto)).map((f) => f.arquivo);
+    const teto = FONTES.filter((f) => f.arquivo !== 'lib/pedidos/regras.ts' && /Math\.min\([^)]*QUANTIDADE_MAXIMA\)/.test(f.texto)).map((f) => f.arquivo);
     expect(teto).toEqual([]);
     const zap = FONTES.filter((f) => f.arquivo !== 'lib/loja/whatsapp.ts' && /Olá! (Tenho|Preciso|Gostaria)/.test(f.texto)).map((f) => f.arquivo);
     expect(zap).toEqual([]);
