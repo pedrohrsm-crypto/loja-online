@@ -37,4 +37,9 @@ describe('tipografia', () => {
     const css = readFileSync(join(RAIZ, 'app/globals.css'), 'utf8');
     expect(css).toMatch(/h1,\s*h2,\s*h3\s*\{[^}]*font-family:\s*var\(--font-titulo\)/);
   });
+
+  it('a regra dos títulos está em @layer base, para as utilidades do Tailwind vencerem', () => {
+    const css = readFileSync(join(RAIZ, 'app/globals.css'), 'utf8');
+    expect(css).toMatch(/@layer base\s*\{\s*h1,\s*h2,\s*h3\s*\{/);
+  });
 });

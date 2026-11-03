@@ -8,6 +8,23 @@ import { IMAGENS_PRODUTO, ROTULO_IMAGEM_ILUSTRATIVA, imagemDoProduto, type Image
 const RAIZ = join(__dirname, '..', '..');
 const LIMITE_BYTES = 120 * 1024;
 
+// Confere cada entrada do mapa contra a pasta public/ de `raiz`; devolve a lista de problemas (vazia = ok).
+function problemas(mapa: Readonly<Record<string, ImagemProduto>>, raiz: string): string[] {
+  const saida: string[] = [];
+  for (const [slug, { src, alt }] of Object.entries(mapa)) {
+    if (src !== `/produtos/${slug}.webp`) saida.push(`${slug}: caminho ${src}`);
+    if (alt.trim().split(/\s+/).length < 4 || /^(foto|imagem)\b/i.test(alt.trim())) saida.push(`${slug}: texto alternativo pobre`);
+    const arquivo = join(raiz, 'public', src);
+    if (!existsSync(arquivo)) {
+      saida.push(`${slug}: arquivo ausente`);
+      continue;
+    }
+    if (statSync(arquivo).size > LIMITE_BYTES) saida.push(`${slug}: ${statSync(arquivo).size} bytes`);
+    if (!/^RIFF[\s\S]{4}WEBP$/.test(readFileSync(arquivo).subarray(0, 12).toString('latin1'))) saida.push(`${slug}: não é WebP`);
+  }
+  return saida;
+}
+
 describe('imagens dos produtos', () => {
   it('slug sem imagem devolve null, inclusive nomes herdados de Object (constructor, __proto__)', () => {
     for (const slug of ['nao-existe', 'constructor', '__proto__', 'toString', '']) expect(imagemDoProduto(slug)).toBeNull();
@@ -20,20 +37,25 @@ describe('imagens dos produtos', () => {
   });
 
   it('cada entrada tem arquivo WebP existente, de até 120 KB, no caminho do slug, e texto alternativo descritivo', () => {
-    const problemas: string[] = [];
-    for (const [slug, { src, alt }] of Object.entries(IMAGENS_PRODUTO)) {
-      if (src !== `/produtos/${slug}.webp`) problemas.push(`${slug}: caminho ${src}`);
-      const arquivo = join(RAIZ, 'public', src);
-      if (!existsSync(arquivo)) {
-        problemas.push(`${slug}: arquivo ausente`);
-        continue;
-      }
-      if (statSync(arquivo).size > LIMITE_BYTES) problemas.push(`${slug}: ${statSync(arquivo).size} bytes`);
-      const cabeca = readFileSync(arquivo).subarray(0, 12).toString('latin1');
-      if (!/^RIFF[\s\S]{4}WEBP$/.test(cabeca)) problemas.push(`${slug}: não é WebP`);
-      if (alt.trim().split(/\s+/).length < 4 || /^(foto|imagem)\b/i.test(alt.trim())) problemas.push(`${slug}: texto alternativo pobre`);
-    }
-    expect(problemas).toEqual([]);
+    expect(problemas(IMAGENS_PRODUTO, RAIZ)).toEqual([]);
+  });
+
+  it('o verificador pega arquivo ausente, caminho errado e texto alternativo pobre (canário, vale com o mapa vazio)', () => {
+    const canario: Record<string, ImagemProduto> = {
+      'sabonete-artesanal': { src: '/produtos/sabonete-artesanal.webp', alt: 'Duas barras de sabonete verde sobre linho' },
+      'vela-aromatica': { src: '/produtos/outro.webp', alt: 'Foto' },
+    };
+    const achados = problemas(canario, join(RAIZ, 'lib', 'loja', 'inexistente'));
+    expect(achados).toContain('sabonete-artesanal: arquivo ausente');
+    expect(achados).toContain('vela-aromatica: caminho /produtos/outro.webp');
+    expect(achados).toContain('vela-aromatica: texto alternativo pobre');
+  });
+
+  it('todo slug do mapa está entre os produtos publicados do seed', () => {
+    const seed = readFileSync(join(RAIZ, 'supabase/seed/catalogo.sql'), 'utf8');
+    const publicados = [...seed.matchAll(/\('[a-z-]+',\s*'([a-z0-9-]+)',[\s\S]*?,\s*(true|false)\)/g)].filter((m) => m[2] === 'true').map((m) => m[1]);
+    expect(publicados.length).toBe(12);
+    expect(Object.keys(IMAGENS_PRODUTO).filter((slug) => !publicados.includes(slug))).toEqual([]);
   });
 
   it('a tela mostra a etiqueta "Imagem ilustrativa", usa next/image com sizes e pré-carrega só a imagem principal', () => {

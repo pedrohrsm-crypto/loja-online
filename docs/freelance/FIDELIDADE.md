@@ -166,4 +166,5 @@ Telas principais propostas: **4 Produto**, **5 Carrinho**, **7 Pagamento (Pix, i
 ## 4. Mudanças depois da aprovação
 | Data | Fase | Mudança | Pedido de mudança nº |
 |---|---|---|---|
+| 30-Out | alta | catálogo visual com painel do produto e "Comprar agora" (D-LO-8, #26), R$ 0, +0,5 h do dono | nº 2 |
 | 30-Out | alta | camada visual (paleta, fonte, wordmark, imagens ilustrativas) | não é pedido de mudança: faltou no brief do Dia 1 (DESCOBERTA, perguntas 10 e 12) |
