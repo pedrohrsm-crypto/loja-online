@@ -1,11 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 
 // A suíte inteira roda sempre: quem decide o que roda é este arquivo, não a linha de comando.
-const PORTA = 3100;
+// Porta isolada por variável (E2E_PORTA), para duas frentes rodarem a suíte na mesma máquina sem
+// uma reaproveitar o servidor da outra: com E2E_PORTA definida, nunca reaproveita.
+const PORTA = Number(process.env.E2E_PORTA ?? 3100);
+const REUSAR_SERVIDOR = !process.env.CI && !process.env.E2E_PORTA;
 // O e2e nunca fala com um Supabase de verdade: e2e/apoio/supabase-falso.mjs responde o catálogo, o
 // frete e a guarda de papel com dados fictícios (o código real de lib/catalogo/ roda por cima), e
 // e2e/apoio/desviar-supabase.cjs leva para ele toda chamada a *.supabase.co do servidor.
-const PORTA_SUPABASE_FALSO = 3101;
+const PORTA_SUPABASE_FALSO = PORTA + 1;
 const URL_SUPABASE_FALSO = `http://127.0.0.1:${PORTA_SUPABASE_FALSO}`;
 
 export default defineConfig({
@@ -24,14 +27,14 @@ export default defineConfig({
     {
       command: 'node e2e/apoio/supabase-falso.mjs',
       url: `${URL_SUPABASE_FALSO}/saude`,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: REUSAR_SERVIDOR,
       timeout: 15_000,
       env: { SUPABASE_FALSO_PORTA: String(PORTA_SUPABASE_FALSO) },
     },
     {
       command: `npm run start -- -p ${PORTA}`,
       url: `http://127.0.0.1:${PORTA}`,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: REUSAR_SERVIDOR,
       timeout: 60_000,
       env: {
         NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://exemplo.supabase.co',
