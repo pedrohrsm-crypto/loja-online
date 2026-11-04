@@ -61,11 +61,15 @@ describe('guardas da interface', () => {
     expect(achados).toEqual([]);
   });
 
-  it('as telas novas não chamam o Mercado Pago nem o código de pagamento herdado', () => {
-    const achados = FONTES.filter(
-      (f) => /^(components\/(loja|cabecalho|navegacao)|lib\/loja|app\/(produto|carrinho|checkout|admin\/pedidos))/.test(f.arquivo) && /lib\/pagamentos|mercadopago|api\.mercadopago/i.test(f.texto),
-    ).map((f) => f.arquivo);
-    expect(achados).toEqual([]);
+  it('as telas não chamam o Mercado Pago direto nem o código de pagamento herdado; só a tela do Pix usa lib/pagamentos (#32)', () => {
+    // A tela do Pix (#32) passa pelas regras de lib/pagamentos (cobrança, tela), nunca pelo cliente HTTP
+    // (lib/pagamentos/mercadopago.ts, que tem o token) nem pelo Stripe do starter.
+    const TELA_DO_PIX = /^(app\/checkout\/pagamento\/|components\/loja\/pix-vista\.tsx$)/;
+    const telas = FONTES.filter((f) => /^(components\/(loja|cabecalho|navegacao)|lib\/loja|app\/(produto|carrinho|checkout|admin\/pedidos))/.test(f.arquivo));
+    const direto = telas.filter((f) => /api\.mercadopago|pagamentos\/(mercadopago|stripe|checkout|produtos)['"]/i.test(f.texto)).map((f) => f.arquivo);
+    expect(direto).toEqual([]);
+    const fora = telas.filter((f) => !TELA_DO_PIX.test(f.arquivo) && /lib\/pagamentos/.test(f.texto)).map((f) => f.arquivo);
+    expect(fora).toEqual([]);
   });
 
   it('os dados de exemplo moram num módulo só (lib/loja/exemplos.ts)', () => {

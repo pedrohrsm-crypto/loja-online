@@ -1,0 +1,49 @@
+name: Reconciliar Pix
+
+# Reconciliação de 15 min dos Pix abertos (#32, L5): chama a rota de produção com o segredo. O plano Hobby
+# da Vercel só aceita cron 1×/dia (desvio do CLAUDE.md; risco #9), então o de 15 min mora aqui; o diário
+# do vercel.json continua. A rota tem trava: as duas rodadas nunca se sobrepõem.
+#
+# Antes do merge, o PM cadastra no repositório (Settings → Secrets and variables → Actions):
+#   - secret   CRON_SECRET     = o mesmo valor de CRON_SECRET na Vercel (Production);
+#   - variable RECONCILIAR_URL = https://loja-online-chi-black.vercel.app/api/cron/reconciliar
+# Sem eles, o workflow FALHA (e o GitHub avisa por e-mail): nunca "verde sem ter feito nada" (04, 12.8).
+# O GitHub só agenda workflows da branch padrão, e o horário pode atrasar alguns minutos em pico.
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: reconciliar-pix
+  cancel-in-progress: false
+
+jobs:
+  reconciliar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Chamar a reconciliação
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          RECONCILIAR_URL: ${{ vars.RECONCILIAR_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CRON_SECRET}" ] || [ -z "${RECONCILIAR_URL}" ]; then
+            echo "::error::CRON_SECRET (secret) ou RECONCILIAR_URL (variable) não cadastrados no repositório"
+            exit 1
+          fi
+          # 2 tentativas com espera: uma falha de rede passageira não vira alarme falso.
+          for tentativa in 1 2; do
+            status=$(curl -sS -o resposta.json -w '%{http_code}' --max-time 60 -X POST \
+              -H "Authorization: Bearer ${CRON_SECRET}" "${RECONCILIAR_URL}" || echo 000)
+            echo "tentativa ${tentativa}: HTTP ${status}"
+            cat resposta.json 2>/dev/null || true
+            echo
+            if [ "${status}" = "200" ]; then exit 0; fi
+            sleep 20
+          done
+          echo "::error::a reconciliação respondeu ${status}"
+          exit 1
