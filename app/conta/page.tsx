@@ -3,6 +3,8 @@ import { clienteServidor } from '@/lib/supabase/servidor';
 import { entrarNaArea } from '@/lib/seguranca/area';
 import { SemAcesso } from '@/components/sem-acesso';
 import { PRODUTOS, formatarReais } from '@/lib/pagamentos/produtos';
+import { formatarPreco } from '@/lib/catalogo/preco';
+import { lerPedidosResumidos, rotuloDoPedido } from '@/lib/pedidos/resumo';
 import { FormularioCompra, FormularioExclusao, FormularioNome } from './formularios';
 import { sair } from './acoes';
 
@@ -17,10 +19,10 @@ export default async function Conta({ searchParams }: PageProps<'/conta'>) {
   const supabase = await clienteServidor();
   const [perfil, pedidos] = await Promise.all([
     supabase.from('perfis').select('nome').eq('id', usuarioId).maybeSingle(),
-    supabase.from('pedidos').select('id, produto, valor_centavos, status, criado_em').order('criado_em', { ascending: false }).limit(20),
+    lerPedidosResumidos(supabase, 20),
   ]);
   const produto = PRODUTOS.curso;
-  const jaPagou = pedidos.data?.some((p) => p.produto === produto.slug && p.status === 'pago');
+  const jaPagou = pedidos.ok && pedidos.dados.some((p) => p.descricao.tipo === 'produto' && p.descricao.produto === produto.slug && p.status === 'pago');
 
   return (
     <div className="space-y-10">
@@ -35,14 +37,14 @@ export default async function Conta({ searchParams }: PageProps<'/conta'>) {
 
       <section aria-labelledby="t-compras" className="space-y-3">
         <h2 id="t-compras" className="text-xl font-semibold">Compras</h2>
-        {pedidos.error ? <p role="alert" className="text-erro">Não foi possível carregar as suas compras agora.</p> : null}
-        {pedidos.data && pedidos.data.length > 0 ? (
+        {!pedidos.ok ? <p role="alert" className="text-erro">Não foi possível carregar as suas compras agora.</p> : null}
+        {pedidos.ok && pedidos.dados.length > 0 ? (
           <ul className="space-y-1">
-            {pedidos.data.map((p) => (
-              <li key={p.id}>{PRODUTOS[p.produto]?.nome ?? p.produto} · {formatarReais(p.valor_centavos)} · {ROTULO_STATUS[p.status] ?? p.status}</li>
+            {pedidos.dados.map((p) => (
+              <li key={p.id}>{rotuloDoPedido(p, (slug) => PRODUTOS[slug]?.nome ?? slug)} · {p.valorCentavos === null ? '—' : formatarPreco(p.valorCentavos)} · {ROTULO_STATUS[p.status] ?? p.status}</li>
             ))}
           </ul>
-        ) : pedidos.data ? <p>Nenhuma compra ainda.</p> : null}
+        ) : pedidos.ok ? <p>Nenhuma compra ainda.</p> : null}
         {!jaPagou ? <FormularioCompra produto={produto.slug} rotulo={`Comprar ${produto.nome} por ${formatarReais(produto.valorCentavos)}`} /> : null}
       </section>
 

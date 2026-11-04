@@ -1,6 +1,7 @@
 // Regras do carrinho do navegador (L3). Puras: o armazenamento (localStorage) mora em
 // lib/loja/carrinho-armazenamento.ts, e a conferência com o catálogo, em lib/loja/acoes.ts.
-export const QUANTIDADE_MAXIMA = 10;
+// O teto por item e a soma moram em lib/pedidos/regras.ts: o checkout no servidor usa os mesmos.
+import { QUANTIDADE_MAXIMA, somaDasLinhas, tetoDoItem } from '@/lib/pedidos/regras';
 
 export type ItemCarrinho = {
   variacaoId: string;
@@ -22,13 +23,6 @@ export type Situacao =
   | { tipo: 'acima-do-estoque'; disponivel: number; precoAntesCentavos?: number; precoAgoraCentavos?: number }
   | { tipo: 'indisponivel' }
   | { tipo: 'preco-mudou'; precoAntesCentavos: number; precoAgoraCentavos: number };
-
-// Quantas unidades do item o comprador pode levar: o estoque, até o teto por item (FIDELIDADE.md §1,
-// regra 3). Única regra do teto: carrinho, produto e conferência chamam esta função.
-export function tetoDoItem(estoque: number): number {
-  const e = Math.trunc(estoque);
-  return Number.isFinite(e) ? Math.max(0, Math.min(e, QUANTIDADE_MAXIMA)) : 0;
-}
 
 export function limitarQuantidade(quantidade: number, estoque: number = QUANTIDADE_MAXIMA): number {
   const n = Math.trunc(quantidade);
@@ -87,14 +81,8 @@ export function situacaoDoItem(item: ItemCarrinho, atual: SituacaoAtual | undefi
 // Subtotal dos itens que podem ser comprados, pelo preço de HOJE quando o catálogo foi conferido.
 // Item esgotado ou fora do ar não entra na conta.
 export function subtotalCentavos(itens: readonly ItemCarrinho[], atuais?: Readonly<Record<string, SituacaoAtual>>): number {
-  let total = 0;
-  for (const i of itens) {
-    if (!compravel(atuais, i)) continue;
-    // Nunca conta mais que o disponível, pelo preço de hoje: o checkout confere o mesmo teto.
-    const { quantidade, precoCentavos } = linhaEfetiva(i, atuais?.[i.variacaoId]);
-    total += precoCentavos * quantidade;
-  }
-  return total;
+  // Nunca conta mais que o disponível, pelo preço de hoje: o checkout confere o mesmo teto.
+  return somaDasLinhas(itens.filter((i) => compravel(atuais, i)).map((i) => linhaEfetiva(i, atuais?.[i.variacaoId])));
 }
 
 // "Continuar com o que está disponível": tira esgotados e fora do ar, aceita os preços novos.

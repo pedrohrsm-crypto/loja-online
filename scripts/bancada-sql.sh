@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Bancada SQL: aplica o stub do Supabase, todas as migrations em ordem, a carga fictícia
-# (duas vezes, para provar que é idempotente) e os testes de acesso num banco novo.
+# (duas vezes, para provar que é idempotente) e os testes de acesso num banco novo. Os testes
+# `.sql` rodam um depois do outro; os `.sh` abrem duas sessões ao mesmo tempo (concorrência).
 # Os ASSERT das migrations e dos testes reprovam a execução.
 #
 # Uso: DATABASE_URL=postgres://... bash scripts/bancada-sql.sh   (CI, com serviço postgres)
@@ -43,6 +44,12 @@ done
 t=0
 for f in "$RAIZ"/supabase/bancada/testes/*.sql; do
   "${PSQL[@]}" "$URL_BANCO" -f "$f" || { echo "REPROVOU no teste $(basename "$f")" >&2; exit 1; }
+  t=$((t + 1))
+done
+# Testes com duas sessões de verdade (concorrência): cada script recebe a URL do banco e o psql.
+for f in "$RAIZ"/supabase/bancada/testes/*.sh; do
+  [[ -e "$f" ]] || continue
+  URL_BANCO="$URL_BANCO" bash "$f" || { echo "REPROVOU no teste $(basename "$f")" >&2; exit 1; }
   t=$((t + 1))
 done
 echo "bancada SQL: $n migration(s), $c carga(s) aplicada(s) 2× e $t teste(s) verdes"
