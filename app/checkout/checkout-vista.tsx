@@ -51,11 +51,11 @@ export function CheckoutVista() {
       <div className="space-y-4">
         <h1 className="text-2xl font-bold">Pedido reservado</h1>
         <Aviso titulo={`Pedido nº ${resultado.pedidoId.slice(0, 8).toUpperCase()} · ${formatarPreco(resultado.totalCentavos)}`}>
-          Separamos os seus itens até as {hora(resultado.expiraEm)}. Nada foi cobrado: o pagamento por Pix ou cartão chega na próxima etapa do projeto.
+          Separamos os seus itens até as {hora(resultado.expiraEm)}. Nada foi cobrado ainda: pague com Pix até lá para confirmar o pedido.
         </Aviso>
         <BarraAcao>
-          <Link href="/" className={estiloBotao('primario', 'w-full')}>
-            Voltar ao início
+          <Link href={`/checkout/pagamento/${resultado.pedidoId}`} className={estiloBotao('primario', 'w-full')}>
+            Pagar com Pix
           </Link>
         </BarraAcao>
       </div>

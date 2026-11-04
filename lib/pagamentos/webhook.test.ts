@@ -1,125 +1,143 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { assinar } from './assinatura';
-import { DadoInvalido, processarWebhook, type Reserva, type RepositorioEventos, type Tratador } from './webhook';
-import { chaveDoCheckout } from './chave';
+import { assinar, manifest } from './assinatura';
+import type { LeituraConfigMP } from './config';
+import { LojaFalsa } from './mp-falso.apoio';
+import { processarWebhook } from './webhook';
 
 vi.spyOn(console, 'error').mockImplementation(() => {});
 vi.spyOn(console, 'log').mockImplementation(() => {});
+vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-const SEGREDO = 'whsec_teste';
+const SEGREDO = 'segredo-ficticio-de-teste';
 const AGORA = 1_790_000_000_000;
+const PEDIDO = 'b0000000-0000-4000-8000-000000000001';
+const ORDER = 'ORD01PEDIDO1';
+const CONFIG: LeituraConfigMP = { ok: true, config: { modo: 'teste', accessToken: 'x', segredoWebhook: SEGREDO } };
 
-function requisicao(evento: object, segredo = SEGREDO, t = AGORA / 1000) {
-  const corpo = JSON.stringify(evento);
-  return { corpo, cabecalho: `t=${t},v1=${assinar(corpo, segredo, t)}` };
-}
+type Notificacao = { corpo?: object | string; dataId?: string | null; req?: string; ts?: number; segredo?: string; tipo?: string | null };
 
-class RepoMemoria implements RepositorioEventos {
-  estado = new Map<string, 'reservado' | 'concluido'>();
-  forcar?: Reserva;
-  async reservar(id: string): Promise<Reserva> {
-    if (this.forcar) return this.forcar;
-    const e = this.estado.get(id);
-    if (e === 'concluido') return 'duplicado';
-    if (e === 'reservado') return 'em-andamento';
-    this.estado.set(id, 'reservado');
-    return 'reservado';
-  }
-  async concluir(id: string) { this.estado.set(id, 'concluido'); }
-  async devolver(id: string) { this.estado.delete(id); }
-}
-
-const EVENTO = { id: 'evt_1', type: 'checkout.session.completed', data: { object: { id: 'cs_1' } } };
-
-describe('webhook de pagamento', () => {
-  let repo: RepoMemoria;
-  let efeitos: number;
-  let tratadores: Record<string, Tratador>;
+describe('webhook do Mercado Pago (L4)', () => {
+  let loja: LojaFalsa;
   beforeEach(() => {
-    repo = new RepoMemoria();
-    efeitos = 0;
-    tratadores = { 'checkout.session.completed': async () => { efeitos++; } };
+    loja = new LojaFalsa();
+    loja.pedido({ id: PEDIDO, mpOrderId: ORDER, totalCentavos: 7500 });
+    loja.orderPaga(ORDER, PEDIDO, '75.00');
   });
-  const rodar = (r: { corpo: string; cabecalho: string }) =>
-    processarWebhook({ ...r, segredo: SEGREDO, repo, tratadores, agoraMs: AGORA });
 
-  it('processa uma vez e ignora a reentrega do mesmo evento', async () => {
-    expect((await rodar(requisicao(EVENTO))).status).toBe(200);
-    const segunda = await rodar(requisicao(EVENTO));
+  const enviar = (n: Notificacao = {}, config: LeituraConfigMP = CONFIG) => {
+    const dataId = n.dataId === undefined ? ORDER : n.dataId;
+    const req = n.req ?? 'req-1';
+    const ts = String(n.ts ?? AGORA);
+    const corpo = typeof n.corpo === 'string' ? n.corpo : JSON.stringify(n.corpo ?? { type: 'order', action: 'order.processed', live_mode: false, data: { id: ORDER } });
+    return processarWebhook({
+      corpo, xSignature: `ts=${ts},v1=${assinar(manifest(dataId?.toLowerCase() ?? null, req, ts), n.segredo ?? SEGREDO)}`,
+      xRequestId: req, dataId, tipo: n.tipo === undefined ? 'order' : n.tipo, config, eventos: loja, portas: loja, agoraMs: AGORA,
+    });
+  };
+
+  it('T3: notificação válida → GET da order → pedido pago', async () => {
+    const r = await enviar();
+    expect(r).toEqual({ status: 200, corpo: { recebido: true, resultado: 'pago' } });
+    expect(loja.pedidos.get(PEDIDO)?.status).toBe('pago');
+    expect(loja.gets).toBe(1);
+  });
+
+  it('T8: a mesma notificação 2 vezes → a 2ª é duplicada e nada muda', async () => {
+    await enviar();
+    const segunda = await enviar();
     expect(segunda).toEqual({ status: 200, corpo: { recebido: true, resultado: 'duplicado' } });
-    expect(efeitos).toBe(1);
+    expect(loja.gets).toBe(1);
+    expect(loja.baixas.get(PEDIDO)).toBe(1);
   });
 
-  it('assinatura errada ou velha demais → 400, sem efeito', async () => {
-    expect((await rodar(requisicao(EVENTO, 'whsec_outro'))).status).toBe(400);
-    expect((await rodar(requisicao(EVENTO, SEGREDO, AGORA / 1000 - 3600))).status).toBe(400);
-    expect(efeitos).toBe(0);
+  it('T9: duas notificações DIFERENTES do mesmo pagamento (created e processed) → baixa 1 vez', async () => {
+    await enviar({ req: 'req-created', corpo: { type: 'order', action: 'order.created', live_mode: false } });
+    const r = await enviar({ req: 'req-processed', corpo: { type: 'order', action: 'order.processed', live_mode: false } });
+    expect(r.corpo.resultado).toBe('ja-pago');
+    expect(loja.baixas.get(PEDIDO)).toBe(1);
   });
 
-  it('aceita qualquer v1 válida (rotação de segredo)', async () => {
-    const { corpo } = requisicao(EVENTO);
-    const t = AGORA / 1000;
-    const cabecalho = `t=${t},v1=${assinar(corpo, 'whsec_antigo', t)},v1=${assinar(corpo, SEGREDO, t)}`;
-    expect((await processarWebhook({ corpo, cabecalho, segredo: SEGREDO, repo, tratadores, agoraMs: AGORA })).status).toBe(200);
+  it('T10: assinatura errada, velha ou de outro data.id → 400, sem GET', async () => {
+    expect((await enviar({ segredo: 'outro' })).status).toBe(400);
+    expect((await enviar({ ts: AGORA - 3_600_000 })).status).toBe(400);
+    const r = await processarWebhook({
+      corpo: '{}', xSignature: `ts=${AGORA},v1=${assinar(manifest('ord-outra', 'req-1', String(AGORA)), SEGREDO)}`,
+      xRequestId: 'req-1', dataId: ORDER, tipo: 'order', config: CONFIG, eventos: loja, portas: loja, agoraMs: AGORA,
+    });
+    expect(r.status).toBe(400);
+    expect(loja.gets).toBe(0);
+    expect(loja.pedidos.get(PEDIDO)?.status).toBe('aberto');
   });
 
-  it('falha transitória → 500 e reserva devolvida; a reentrega processa', async () => {
-    let falhar = true;
-    tratadores['checkout.session.completed'] = async () => { if (falhar) throw new Error('banco fora'); efeitos++; };
-    expect((await rodar(requisicao(EVENTO))).status).toBe(500);
-    expect(repo.estado.has('evt_1')).toBe(false);
-    falhar = false;
-    expect((await rodar(requisicao(EVENTO))).status).toBe(200);
-    expect(efeitos).toBe(1);
+  it('T10: corpo forjado com status=approved e a order ainda esperando → nada muda (decide o GET)', async () => {
+    loja.orders.set(ORDER, { ...loja.orders.get(ORDER)!, status: 'action_required', status_detail: 'waiting_transfer' });
+    const r = await enviar({ corpo: { type: 'order', live_mode: false, data: { id: ORDER, status: 'processed', status_detail: 'accredited', total_amount: '75.00' }, status: 'approved' } });
+    expect(r).toEqual({ status: 200, corpo: { recebido: true, resultado: 'aguardando' } });
+    expect(loja.pedidos.get(PEDIDO)?.status).toBe('aberto');
+    expect(loja.confirmacoes).toBe(0);
   });
 
-  it('dado inválido → 200 e concluído (500 permanente desativaria o endpoint)', async () => {
-    tratadores['checkout.session.completed'] = async () => { throw new DadoInvalido('pedido inexistente'); };
-    expect((await rodar(requisicao(EVENTO))).corpo.resultado).toBe('invalido');
-    expect(repo.estado.get('evt_1')).toBe('concluido');
+  it('T10b: order paga com valor diferente do pedido → nada vira pago, alerta', async () => {
+    loja.orderPaga(ORDER, PEDIDO, '74.99');
+    const r = await enviar();
+    expect(r.corpo.resultado).toBe('valor-divergente');
+    expect(loja.pedidos.get(PEDIDO)).toMatchObject({ status: 'aberto', alerta: 'valor-divergente' });
+  });
+
+  it('T10b: order paga ligada a outro pedido (external_reference) → nada vira pago', async () => {
+    loja.orderPaga(ORDER, 'b0000000-0000-4000-8000-0000000000ff', '75.00');
+    expect((await enviar()).corpo.resultado).toBe('pedido-divergente');
+    expect(loja.pedidos.get(PEDIDO)?.status).toBe('aberto');
+  });
+
+  it('T11: banco fora → 500 e reserva devolvida; a reentrega processa uma vez', async () => {
+    const reservar = loja.reservar.bind(loja);
+    loja.confirmar = vi.fn().mockRejectedValueOnce(new Error('banco fora')).mockImplementation(LojaFalsa.prototype.confirmar.bind(loja));
+    const r = await enviar();
+    expect(r.status).toBe(500);
+    expect(loja.eventos.size).toBe(0);
+    loja.reservar = reservar;
+    expect((await enviar()).corpo.resultado).toBe('pago');
+    expect(loja.baixas.get(PEDIDO)).toBe(1);
+  });
+
+  it('T11: Mercado Pago fora no GET → 500 (o Mercado Pago tenta de novo); recusa do GET → 200 inválido', async () => {
+    loja.falharGet = 'transitorio';
+    expect((await enviar()).status).toBe(500);
+    expect(loja.eventos.size).toBe(0);
+    loja.falharGet = 'recusa';
+    expect(await enviar({ req: 'req-2' })).toEqual({ status: 200, corpo: { recebido: true, resultado: 'invalido' } });
+  });
+
+  it('T16: live_mode=true num pedido de teste → 200 com aviso, sem GET e sem efeito', async () => {
+    const r = await enviar({ corpo: { type: 'order', live_mode: true, data: { id: ORDER } } });
+    expect(r).toEqual({ status: 200, corpo: { recebido: true, resultado: 'modo-divergente' } });
+    expect(loja.gets).toBe(0);
+    expect(loja.pedidos.get(PEDIDO)?.status).toBe('aberto');
+  });
+
+  it('T16: order de teste num pedido de produção → a função de banco recusa (modo-divergente)', async () => {
+    loja.pedidos.get(PEDIDO)!.modo = 'producao';
+    expect((await enviar()).corpo.resultado).toBe('modo-divergente');
+    expect(loja.pedidos.get(PEDIDO)?.status).toBe('aberto');
+  });
+
+  it('outro tópico → 200 ignorado; sem data.id → 400; corpo que não é JSON → 400', async () => {
+    expect((await enviar({ tipo: 'payment' })).corpo.resultado).toBe('ignorado');
+    expect((await enviar({ dataId: null })).status).toBe(400);
+    expect((await enviar({ corpo: 'não é json' })).status).toBe(400);
+    expect(loja.gets).toBe(0);
+  });
+
+  it('sem configuração → 500, sem tocar em nada', async () => {
+    const r = await enviar({}, { ok: false, faltando: ['MERCADOPAGO_WEBHOOK_SECRET'] });
+    expect(r.status).toBe(500);
+    expect(loja.eventos.size).toBe(0);
   });
 
   it('em andamento em outra instância → 409', async () => {
-    repo.forcar = 'em-andamento';
-    expect((await rodar(requisicao(EVENTO))).status).toBe(409);
-    expect(efeitos).toBe(0);
-  });
-
-  it('reserva parada recuperada → processa', async () => {
-    repo.forcar = 'recuperado';
-    expect((await rodar(requisicao(EVENTO))).status).toBe(200);
-    expect(efeitos).toBe(1);
-  });
-
-  it('falha ao reservar → 500', async () => {
-    repo.reservar = async () => { throw new Error('banco fora'); };
-    expect((await rodar(requisicao(EVENTO))).status).toBe(500);
-  });
-
-  it('tipo sem tratador → 200 ignorado, sem reservar', async () => {
-    const r = await rodar(requisicao({ ...EVENTO, type: 'customer.created' }));
-    expect(r.corpo.resultado).toBe('ignorado');
-    expect(repo.estado.size).toBe(0);
-  });
-
-  it('sem segredo configurado → 500', async () => {
-    const r = await processarWebhook({ ...requisicao(EVENTO), segredo: undefined, repo, tratadores, agoraMs: AGORA });
-    expect(r.status).toBe(500);
-  });
-});
-
-describe('chave do checkout', () => {
-  it('é estável para o mesmo pedido e corpo, e muda com qualquer um dos dois', () => {
-    const a = chaveDoCheckout('p1', { preco: 'price_1', modo: 'payment' });
-    expect(chaveDoCheckout('p1', { modo: 'payment', preco: 'price_1' })).toBe(a);
-    expect(chaveDoCheckout('p2', { preco: 'price_1', modo: 'payment' })).not.toBe(a);
-    expect(chaveDoCheckout('p1', { preco: 'price_2', modo: 'payment' })).not.toBe(a);
-  });
-
-  it('não depende do relógio', () => {
-    const a = chaveDoCheckout('p1', { preco: 'x' });
-    vi.setSystemTime(new Date('2030-01-01'));
-    expect(chaveDoCheckout('p1', { preco: 'x' })).toBe(a);
-    vi.useRealTimers();
+    loja.eventos.set(`mp:${ORDER}:req-1`, 'reservado');
+    expect((await enviar()).status).toBe(409);
+    expect(loja.gets).toBe(0);
   });
 });

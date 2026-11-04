@@ -237,76 +237,7 @@ test.describe('Carrinho', () => {
   });
 });
 
-// ---------------------------------------------------------------- Pagamento Pix
-test.describe('Pagamento Pix', () => {
-  test('aguardando: declarado como exemplo, QR, copia e cola e contagem; axe, sobra e alvos', async ({ page }) => {
-    await page.goto('/checkout/pagamento/1042');
-    await expect(page.getByRole('heading', { name: 'Pague com Pix' })).toBeVisible();
-    await expect(page.getByText(/Demonstração\./)).toBeVisible();
-    await expect(page.getByRole('img', { name: /QR code de exemplo/ })).toBeVisible();
-    await expect(page.getByRole('timer')).toHaveText(/^(29:\d\d|30:00)$/);
-    expect(await axe(page)).toEqual([]);
-    await semSobraNemAlvoPequeno(page);
-  });
-
-  test('"Copiar código Pix" fica visível sem rolar a 140% e copia o código de exemplo', async ({ page, context }) => {
-    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-    await page.goto('/checkout/pagamento/1042');
-    const copiar = page.getByRole('button', { name: 'Copiar código Pix' });
-    await visivelSemRolar(page, copiar);
-    await copiar.click();
-    await expect(page.getByText('Código copiado.')).toBeVisible();
-    expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/^EXEMPLO-NAO-E-UM-PIX/);
-  });
-
-  test('nunca promete aprovação na hora, e não chama o Mercado Pago', async ({ page }) => {
-    const chamadas: string[] = [];
-    page.on('request', (r) => { if (/mercadopago|mercadolibre/i.test(r.url())) chamadas.push(r.url()); });
-    for (const n of ['1042', '1043', '1044']) {
-      await page.goto(`/checkout/pagamento/${n}`);
-      await expect(page.locator('main')).not.toHaveText(/na hora|imediat|instantane/i);
-    }
-    expect(chamadas).toEqual([]);
-  });
-
-  test('a contagem de 30 minutos zera e o Pix vira "expirado", sem esconder o "Já pagou?"', async ({ page }) => {
-    await page.clock.install();
-    await page.goto('/checkout/pagamento/1042');
-    await expect(page.getByRole('heading', { name: 'Pague com Pix' })).toBeVisible();
-    await page.clock.fastForward('31:00');
-    await expect(page.getByRole('heading', { name: 'O Pix expirou' })).toBeVisible();
-    await expect(page.getByText('Você já pagou?')).toBeVisible();
-  });
-
-  test('em confirmação: não pede para pagar de novo e chama o WhatsApp com o nº do pedido', async ({ page }) => {
-    await page.goto('/checkout/pagamento/1043');
-    await expect(page.getByRole('heading', { name: 'Estamos confirmando seu pagamento' })).toBeVisible();
-    await expect(page.getByText('Não pague de novo: esta página atualiza sozinha.')).toBeVisible();
-    const href = (await page.getByRole('link', { name: /Falar no WhatsApp/ }).getAttribute('href')) ?? '';
-    expect(decodeURIComponent(href)).toContain('pedido nº 1043');
-    expect(await axe(page)).toEqual([]);
-    await visivelSemRolar(page, page.getByRole('link', { name: /Falar no WhatsApp/ }));
-    await semSobraNemAlvoPequeno(page);
-  });
-
-  test('expirado: "Já pagou?" vem antes de "Tentar de novo"; "Já paguei" leva a "em confirmação"', async ({ page }) => {
-    await page.goto('/checkout/pagamento/1044');
-    await expect(page.getByRole('heading', { name: 'O Pix expirou' })).toBeVisible();
-    const pergunta = await page.getByText('Você já pagou?').boundingBox();
-    const tentar = await page.getByRole('link', { name: 'Não paguei: tentar de novo' }).boundingBox();
-    expect(pergunta && tentar && pergunta.y < tentar.y).toBe(true);
-    expect(await axe(page)).toEqual([]);
-    await visivelSemRolar(page, page.getByRole('button', { name: 'Já paguei: acompanhar o pedido' }));
-    await semSobraNemAlvoPequeno(page);
-    await page.getByRole('button', { name: 'Já paguei: acompanhar o pedido' }).click();
-    await expect(page.getByRole('heading', { name: 'Estamos confirmando seu pagamento' })).toBeVisible();
-  });
-
-  test('pedido que não existe responde 404', async ({ page }) => {
-    const r = await page.goto('/checkout/pagamento/9999');
-    expect(r?.status()).toBe(404);
-  });
-});
+// Pagamento Pix: com o Pix real (#32), os testes desta tela moram em e2e/pix.spec.ts.
 
 // ---------------------------------------------------------------- Admin pedidos
 test.describe('Admin pedidos', () => {
