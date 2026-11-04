@@ -2,10 +2,12 @@
 
 // Apresentação do produto (L2). Recebe o produto por prop: a página lê o catálogo no servidor, e
 // este componente só escolhe a variação, mostra o preço dela e põe no carrinho do navegador.
+import Image from 'next/image';
 import Link from 'next/link';
 import { useId, useState } from 'react';
 import { formatarPreco, estaEsgotada } from '@/lib/catalogo/preco';
 import type { ProdutoComVariacoes, Variacao } from '@/lib/catalogo/tipos';
+import { ALTURA_IMAGEM, LARGURA_IMAGEM, ROTULO_IMAGEM_ILUSTRATIVA, imagemDoProduto } from '@/lib/loja/imagens';
 import { adicionar } from '@/lib/loja/carrinho';
 import { tetoDoItem } from '@/lib/pedidos/regras';
 import { gravarCarrinho, lerCarrinhoAgora } from '@/lib/loja/carrinho-armazenamento';
@@ -17,6 +19,40 @@ import { FreteCep } from './frete-cep';
 
 const CHIP =
   'flex min-h-11 min-w-11 items-center justify-center rounded-full border border-borda bg-fundo px-4 py-2 text-center peer-checked:border-2 peer-checked:border-texto peer-checked:font-bold peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-foco';
+
+// Selos de confiança (I-07). O prazo de 7 dias é o do arrependimento (DESCOBERTA §3, art. 49 do CDC). São selos da página do produto; os do I-07 perto do pagar (Mercado Pago, CNPJ, contato e trocas) ficam para a fatia de pagamentos.
+const SELOS = ['Feito à mão em pequenos lotes', 'Ingredientes na página', 'Arrependimento em até 7 dias da entrega'];
+
+// Foto do produto: a ilustração do slug, ou o espaço reservado de antes quando o slug não tem imagem.
+// A mesma caixa 16:10 nos dois casos, para a página não mudar de tamanho quando a imagem chega.
+function FotoProduto({ slug }: { slug: string }) {
+  const imagem = imagemDoProduto(slug);
+  if (!imagem) {
+    return (
+      <div
+        role="img"
+        aria-label="Foto do produto em breve"
+        className="flex aspect-[16/10] items-center justify-center rounded-cartao border border-borda bg-superficie text-sm text-texto-suave"
+      >
+        Foto do produto em breve
+      </div>
+    );
+  }
+  return (
+    <figure className="relative aspect-[16/10] overflow-hidden rounded-cartao border border-borda bg-superficie shadow-cartao">
+      <Image
+        src={imagem.src}
+        alt={imagem.alt}
+        width={LARGURA_IMAGEM}
+        height={ALTURA_IMAGEM}
+        sizes="(min-width: 64rem) 62rem, 100vw"
+        preload
+        className="size-full object-cover"
+      />
+      <figcaption className="absolute bottom-2 left-2 rounded-full bg-fundo px-3 py-1 text-xs text-texto">{ROTULO_IMAGEM_ILUSTRATIVA}</figcaption>
+    </figure>
+  );
+}
 
 function Escolha({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
   return (
@@ -58,7 +94,7 @@ export function ProdutoVista({ produto }: { produto: ProdutoComVariacoes }) {
     <article className="space-y-6">
       <div className="space-y-1">
         <p className="text-sm text-texto-suave">{produto.categoria.nome}</p>
-        <h1 className="text-2xl font-bold">{produto.nome}</h1>
+        <h1 className="text-3xl font-bold">{produto.nome}</h1>
         {escolhida ? (
           <p className="text-xl font-bold" data-testid="preco-produto">
             {formatarPreco(escolhida.precoCentavos)}
@@ -66,15 +102,18 @@ export function ProdutoVista({ produto }: { produto: ProdutoComVariacoes }) {
         ) : null}
       </div>
 
-      <div
-        role="img"
-        aria-label="Foto do produto em breve"
-        className="flex aspect-[16/10] items-center justify-center rounded-md border border-borda bg-superficie text-sm text-texto-suave"
-      >
-        Foto do produto em breve
-      </div>
+      <FotoProduto slug={produto.slug} />
 
       <p>{produto.descricao}</p>
+
+      <ul aria-label="Por que confiar" className="flex flex-wrap gap-2">
+        {SELOS.map((selo) => (
+          <li key={selo} className="inline-flex items-center gap-2 rounded-full border border-destaque px-3 py-1 text-sm text-destaque">
+            <span aria-hidden="true" className="size-2 rounded-full bg-destaque" />
+            {selo}
+          </li>
+        ))}
+      </ul>
 
       {escolhida ? (
         <div className="space-y-4">

@@ -127,7 +127,7 @@ export function PixVista({ pedido }: { pedido: PedidoPixExemplo }) {
         <time role="timer" className="font-bold tabular-nums">{formatarContagem(restante)}</time>
       </p>
       <QrExemplo semente={Number(pedido.numero)} />
-      <div className="space-y-1 rounded-md border border-borda bg-superficie p-3">
+      <div className="space-y-1 rounded-cartao border border-borda bg-superficie p-4 shadow-cartao">
         <p className="text-sm font-semibold">Pix copia e cola (exemplo)</p>
         <code className="block break-all text-sm select-all">{CODIGO_PIX_EXEMPLO}</code>
       </div>

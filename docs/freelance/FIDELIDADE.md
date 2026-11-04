@@ -161,6 +161,10 @@ flowchart TD
 ## 3. Alta fidelidade — Dia 1
 Telas principais propostas: **4 Produto**, **5 Carrinho**, **7 Pagamento (Pix, incluindo "em confirmação")** e **12 Admin pedidos**, que são as que vendem e as que a dona usa todo dia.
 
+**Aprovada pelo cliente em:** 30-Out-2026, por escrito na sessão do PM ("Aprovo a alta fidelidade"). No mesmo dia, o cliente pediu um visual mais atrativo e escolheu três coisas: estilo **botânico natural** (verde-sálvia, creme e terracota; títulos com serifa; ar de feito à mão), **imagens ilustrativas geradas por IA** e **wordmark com raminho de alecrim**. A camada visual entra pela frente `identidade-visual` (#25), sem mudar layout, estados, textos, regras nem fluxos aprovados.
+
 ## 4. Mudanças depois da aprovação
 | Data | Fase | Mudança | Pedido de mudança nº |
 |---|---|---|---|
+| 30-Out | alta | catálogo visual com painel do produto e "Comprar agora" (D-LO-8, #26), R$ 0, +0,5 h do dono | nº 2 |
+| 30-Out | alta | camada visual (paleta, fonte, wordmark, imagens ilustrativas) | não é pedido de mudança: faltou no brief do Dia 1 (DESCOBERTA, perguntas 10 e 12) |
