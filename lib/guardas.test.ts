@@ -17,6 +17,11 @@ function arquivos(): string[] {
   return saida;
 }
 
+// Tira comentários de bloco e de linha (sem confundir com `://` de URL), para a guarda ler só código.
+function semComentarios(texto: string): string {
+  return texto.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+}
+
 const FONTES = arquivos().map((f) => ({ arquivo: relative(RAIZ, f), texto: readFileSync(f, 'utf8') }));
 
 describe('catracas', () => {
@@ -98,6 +103,56 @@ describe('catracas', () => {
       .filter((f) => !/entrarNaArea\(/.test(f.texto))
       .map((f) => f.arquivo);
     expect(layouts.length).toBeGreaterThan(0);
+    expect(achados).toEqual([]);
+  });
+
+  it("o layout e TODA página do painel chamam entrarNaArea('admin') (#21; 04, 2.9)", () => {
+    // A guarda genérica acima aceita qualquer área e some se o layout perder a guarda; esta prende
+    // o painel na área certa e reprova a remoção da guarda do layout.
+    const painel = FONTES.filter((f) => /^app\/admin\/(.*\/)?(layout|page)\.tsx$/.test(f.arquivo));
+    const sem = painel.filter((f) => !/entrarNaArea\(\s*'admin'\s*\)/.test(semComentarios(f.texto))).map((f) => f.arquivo);
+    expect(painel.map((f) => f.arquivo)).toContain('app/admin/layout.tsx');
+    expect(sem).toEqual([]);
+  });
+
+  it('o papel nunca vem de user_metadata nem de app_metadata (FIDELIDADE §1, regra 1)', () => {
+    const achados = FONTES.filter((f) => /\b(user_metadata|app_metadata|raw_user_meta_data|raw_app_meta_data)\b/.test(semComentarios(f.texto))).map((f) => f.arquivo);
+    expect(achados).toEqual([]);
+  });
+
+  it('o aal é lido com o JWT, que o Auth confere (sem ele, vem do cookie sem conferir)', () => {
+    // Toda chamada tem de levar um identificador (o JWT); vazio, undefined, null, void 0 ou um
+    // literal reprovam, porque o auth-js cai no cookie sem conferir.
+    const achados: string[] = [];
+    for (const f of FONTES) {
+      for (const m of semComentarios(f.texto).matchAll(/getAuthenticatorAssuranceLevel\(([^)]*)\)/g)) {
+        const arg = m[1].trim();
+        if (!/^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/.test(arg) || arg === 'undefined' || arg === 'null') achados.push(`${f.arquivo}: (${arg})`);
+      }
+    }
+    expect(achados).toEqual([]);
+  });
+
+  it('a rota de volta só é montada por lib/seguranca/destino.ts (open redirect; S-07)', () => {
+    // O literal `?volta=` e as formas do URLSearchParams: set, append e o objeto do construtor.
+    const MONTA_VOLTA = /[?&]volta=|\.(set|append)\(\s*['"`]volta['"`]|URLSearchParams\(\s*\{[^}]*\bvolta\b/;
+    const achados = FONTES.filter((f) => f.arquivo !== 'lib/seguranca/destino.ts' && MONTA_VOLTA.test(semComentarios(f.texto))).map((f) => f.arquivo);
+    expect(achados).toEqual([]);
+  });
+
+  it('nenhum log leva e-mail, senha, código digitado ou segredo do autenticador (LGPD; 04, 2.5)', () => {
+    const achados: string[] = [];
+    // Atalho `{ email }` ou valor `x: codigo` dentro da chamada, mesmo quebrada em várias linhas.
+    const atalho = /[{,]\s*(email|senha|password|codigo|token|segredo|secret|qr|qr_code)\s*[,}]/;
+    const valor = /:\s*(email|senha|password|codigo|segredo|dados)\s*[,})]/;
+    for (const f of FONTES) {
+      const codigo = semComentarios(f.texto);
+      for (const m of codigo.matchAll(/\blog\.(debug|info|warn|error)\(/g)) {
+        const fim = codigo.indexOf(');', m.index);
+        const chamada = codigo.slice(m.index, fim < 0 ? undefined : fim + 1);
+        if (atalho.test(chamada) || valor.test(chamada)) achados.push(`${f.arquivo}:${codigo.slice(0, m.index).split('\n').length}`);
+      }
+    }
     expect(achados).toEqual([]);
   });
 

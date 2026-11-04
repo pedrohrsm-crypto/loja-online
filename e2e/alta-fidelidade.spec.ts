@@ -2,9 +2,10 @@
 // pedidos, sempre em 360 px (o ponto de partida do cliente), com axe, transbordo, alvos de 44 px e a
 // ação principal visível sem rolar a 140% de fonte. O catálogo vem do Supabase FALSO
 // (e2e/apoio/supabase-falso.mjs): o código real de lib/catalogo/ roda por cima, sem banco.
-import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { alvosPequenos, ampliar, inteiroEDescoberto, transbordo } from './apoio/medir';
+import { entrarComo } from './apoio/sessao';
 
 test.use({ viewport: { width: 360, height: 740 } });
 
@@ -32,17 +33,6 @@ async function visivelSemRolar(page: Page, alvo: ReturnType<Page['getByRole']>) 
   expect(await inteiroEDescoberto(alvo), 'o alvo está coberto por uma barra fixa').toBe(true);
 }
 
-// Sessão do Supabase falso: o cookie que o @supabase/ssr lê, com o token que o falso reconhece.
-async function entrarComo(context: BrowserContext, papel: 'admin' | 'cliente') {
-  const sessao = {
-    access_token: `token-${papel}`, refresh_token: 'renovacao', token_type: 'bearer', expires_in: 3600, expires_at: 4102444800,
-    user: { id: papel === 'admin' ? '00000000-0000-4000-8000-0000000000a1' : '00000000-0000-4000-8000-0000000000c1', aud: 'authenticated', role: 'authenticated', email: `${papel}@exemplo.test` },
-  };
-  const valor = 'base64-' + Buffer.from(JSON.stringify(sessao)).toString('base64url');
-  // O nome do cookie vem do começo do domínio da URL do Supabase (convenção do @supabase/ssr).
-  const ref = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://exemplo.supabase.co').hostname.split('.')[0];
-  await context.addCookies([{ name: `sb-${ref}-auth-token`, value: valor, domain: '127.0.0.1', path: '/' }]);
-}
 
 async function semearCarrinho(page: Page, itens: unknown[]) {
   await page.addInitScript((texto) => window.localStorage.setItem('alecrim:carrinho:v1', texto), JSON.stringify(itens));
@@ -348,9 +338,9 @@ test.describe('Pagamento Pix', () => {
 
 // ---------------------------------------------------------------- Admin pedidos
 test.describe('Admin pedidos', () => {
-  test('sem sessão vai para /entrar', async ({ page }) => {
+  test('sem sessão vai para /entrar, levando a rota de origem', async ({ page }) => {
     await page.goto('/admin/pedidos');
-    await expect(page).toHaveURL(/\/entrar$/);
+    await expect(page).toHaveURL(/\/entrar\?volta=%2Fadmin%2Fpedidos$/);
   });
 
   test('comprador não vê os pedidos da dona', async ({ page, context }) => {
