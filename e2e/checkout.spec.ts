@@ -73,6 +73,7 @@ test.describe('com sessão', () => {
     await expect(page.getByRole('heading', { name: 'Pedido reservado' })).toBeVisible();
     await expect(page.getByText(/Pedido nº B0000000 · R\$\s134,00/)).toBeVisible();
     await expect(page.getByText(/Separamos os seus itens até as \d{2}:\d{2}\. Nada foi cobrado/)).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Pagar com Pix' })).toHaveAttribute('href', '/checkout/pagamento/b0000000-0000-4000-8000-0000000004f2');
     expect(await axe(page)).toEqual([]);
   });
 
