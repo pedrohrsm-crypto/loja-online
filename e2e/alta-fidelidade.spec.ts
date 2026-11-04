@@ -3,7 +3,8 @@
 // ação principal visível sem rolar a 140% de fonte. O catálogo vem do Supabase FALSO
 // (e2e/apoio/supabase-falso.mjs): o código real de lib/catalogo/ roda por cima, sem banco.
 import { expect, test } from '@playwright/test';
-import { axe, entrarComo, semearCarrinho, semSobraNemAlvoPequeno, visivelSemRolar } from './apoio/comum';
+import { axe, semearCarrinho, semSobraNemAlvoPequeno, visivelSemRolar } from './apoio/comum';
+import { entrarComo } from './apoio/sessao';
 
 test.use({ viewport: { width: 360, height: 740 } });
 
@@ -160,13 +161,13 @@ test.describe('Carrinho', () => {
     await semSobraNemAlvoPequeno(page);
   });
 
-  test('"Finalizar compra" fica visível sem rolar a 140% e leva à entrega (sem sessão, a /entrar)', async ({ page }) => {
+  test('"Finalizar compra" fica visível sem rolar a 140% e leva à entrega (sem sessão, a /entrar com a volta)', async ({ page }) => {
     await semearCarrinho(page, [ITEM_ALECRIM]);
     await page.goto('/carrinho');
     const finalizar = page.getByRole('button', { name: 'Finalizar compra' });
     await visivelSemRolar(page, finalizar);
     await finalizar.click();
-    await expect(page).toHaveURL(/\/entrar$/);
+    await expect(page).toHaveURL(/\/entrar\?volta=%2Fcheckout$/);
   });
 
   test('item esgotado e preço que mudou: marca as linhas e "continuar" limpa o carrinho', async ({ page }) => {
@@ -309,9 +310,9 @@ test.describe('Pagamento Pix', () => {
 
 // ---------------------------------------------------------------- Admin pedidos
 test.describe('Admin pedidos', () => {
-  test('sem sessão vai para /entrar', async ({ page }) => {
+  test('sem sessão vai para /entrar, levando a rota de origem', async ({ page }) => {
     await page.goto('/admin/pedidos');
-    await expect(page).toHaveURL(/\/entrar$/);
+    await expect(page).toHaveURL(/\/entrar\?volta=%2Fadmin%2Fpedidos$/);
   });
 
   test('comprador não vê os pedidos da dona', async ({ page, context }) => {

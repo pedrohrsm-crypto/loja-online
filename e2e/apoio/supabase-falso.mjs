@@ -5,7 +5,17 @@
 //
 // Casos de teste por slug: "sabonete-artesanal" (normal, com variação esgotada), "vela-aromatica"
 // (alecrim 150 g esgotado), "quebrado" (o banco responde 500: estado de erro), qualquer outro
-// (sem linha: produto indisponível). Papel pelo token: "token-admin" e "token-cliente".
+// (sem linha: produto indisponível).
+//
+// Auth (frente entrar-codigo, #28): o token de acesso tem o FORMATO de um JWT (cabeçalho.carga.
+// assinatura, em base64url), porque mfa.getAuthenticatorAssuranceLevel(jwt) lê o `aal` da carga. O
+// falso não confere a assinatura: o usuário sai do `sub` e o nível, do `aal`. Usuários fictícios:
+// - admin@exemplo.test (senha "senha-da-dona"): dona com o autenticador ativo;
+// - dona-nova@exemplo.test (senha "senha-da-dona"): dona sem autenticador (ativação);
+// - cliente@exemplo.test (senha "senha-do-cliente"): comprador; no cadastro, é o "e-mail que já tem conta";
+// - pendente@exemplo.test (senha "senha-pendente"): conta sem e-mail confirmado;
+// - qualquer outro e-mail no cadastro vira o comprador novo depois do código.
+// O código certo, do e-mail e do autenticador, é sempre 123456.
 import { createServer } from 'node:http';
 
 const PORTA = Number(process.env.SUPABASE_FALSO_PORTA ?? 3101);
@@ -45,6 +55,8 @@ const VARIACAO_OK = 'a0000000-0000-4000-8000-000000000001';
 const VARIACAO_ESGOTA_NA_RESERVA = 'a0000000-0000-4000-8000-000000000002';
 const VARIACAO_BANCO_FORA = 'a0000000-0000-4000-8000-000000000003';
 const PEDIDO_CRIADO = 'b0000000-0000-4000-8000-0000000004f2';
+// A chave de serviço fictícia que o playwright.config.ts entrega ao Next e a este falso.
+const CHAVE_SERVICO = process.env.SUPABASE_FALSO_CHAVE_SERVICO ?? 'service-role-de-teste';
 const SO_POR_SLUG = {
   'oleo-corporal': base('p3', 'oleo-corporal', 'Óleo corporal', { slug: 'oleos', nome: 'Óleos' }, [
     v(VARIACAO_OK, 'p3', 'lavanda', '100 ml', 5200, 5, 'OLE-COR-LAV-100'),
@@ -60,14 +72,106 @@ const FRETES = [
   { nome: 'Sudeste e Sul', cep_inicio: '20000000', cep_fim: '39999999', modo: 'correios', valor_centavos: 3000, prazo_texto: '4 a 9 dias úteis' },
 ];
 
-const USUARIOS = {
-  'token-admin': { id: '00000000-0000-4000-8000-0000000000a1', papel: 'admin' },
-  'token-cliente': { id: '00000000-0000-4000-8000-0000000000c1', papel: 'cliente' },
-};
+const FATOR_ATIVO = { id: 'fator-totp-a1', factor_type: 'totp', status: 'verified', friendly_name: 'Painel Alecrim', created_at: '2026-10-29T12:00:00Z', updated_at: '2026-10-29T12:00:00Z' };
+const FATOR_NOVO = { id: 'fator-novo', factor_type: 'totp', status: 'unverified', friendly_name: 'Painel Alecrim', created_at: '2026-10-29T12:00:00Z', updated_at: '2026-10-29T12:00:00Z' };
+
+const USUARIOS = [
+  { id: '00000000-0000-4000-8000-0000000000a1', email: 'admin@exemplo.test', senha: 'senha-da-dona', papel: 'admin', fatores: [FATOR_ATIVO] },
+  { id: '00000000-0000-4000-8000-0000000000a2', email: 'dona-nova@exemplo.test', senha: 'senha-da-dona', papel: 'admin', fatores: [FATOR_NOVO] },
+  { id: '00000000-0000-4000-8000-0000000000c1', email: 'cliente@exemplo.test', senha: 'senha-do-cliente', papel: 'cliente', fatores: [] },
+  { id: '00000000-0000-4000-8000-0000000000c2', email: 'pendente@exemplo.test', senha: 'senha-pendente', papel: 'cliente', fatores: [], pendente: true },
+  { id: '00000000-0000-4000-8000-0000000000c3', email: 'novo@exemplo.test', senha: null, papel: 'cliente', fatores: [] },
+  { id: '00000000-0000-4000-8000-0000000000c4', email: 'limitado@exemplo.test', senha: 'senha-pendente', papel: 'cliente', fatores: [], pendente: true },
+];
+const NOVO = USUARIOS[4];
+const CODIGO_CERTO = '123456';
+
+const b64 = (obj) => Buffer.from(JSON.stringify(obj)).toString('base64url');
+function jwt(usuario, aal) {
+  const agora = Math.floor(Date.now() / 1000);
+  const carga = { sub: usuario.id, aud: 'authenticated', role: 'authenticated', email: usuario.email, aal, amr: [{ method: aal === 'aal2' ? 'totp' : 'password', timestamp: agora }], iat: agora, exp: 4102444800, session_id: 'sessao-falsa' };
+  return `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64(carga)}.${Buffer.from('assinatura-falsa').toString('base64url')}`;
+}
+
+function lerToken(req) {
+  const token = String(req.headers.authorization ?? '').replace(/^Bearer /, '');
+  try {
+    const carga = JSON.parse(Buffer.from(token.split('.')[1] ?? '', 'base64url').toString('utf8'));
+    const usuario = USUARIOS.find((u) => u.id === carga.sub);
+    return usuario ? { usuario, aal: carga.aal } : null;
+  } catch {
+    return null;
+  }
+}
+
+function usuarioGoTrue(u, email = u.email) {
+  return { id: u.id, aud: 'authenticated', role: 'authenticated', email, email_confirmed_at: u.pendente ? null : '2026-10-29T12:00:00Z', app_metadata: {}, user_metadata: {}, identities: [{ id: u.id, provider: 'email' }], factors: u.fatores, created_at: '2026-10-29T12:00:00Z' };
+}
+
+function sessao(u, aal, email) {
+  return { access_token: jwt(u, aal), refresh_token: `renovacao-${aal}`, token_type: 'bearer', expires_in: 3600, expires_at: 4102444800, user: usuarioGoTrue(u, email) };
+}
+
+function lerCorpo(req) {
+  return new Promise((resolve) => {
+    let texto = '';
+    req.on('data', (parte) => (texto += parte));
+    req.on('end', () => {
+      try {
+        resolve(texto ? JSON.parse(texto) : {});
+      } catch {
+        resolve({});
+      }
+    });
+  });
+}
 
 function json(res, status, corpo) {
   res.writeHead(status, { 'content-type': 'application/json' });
   res.end(JSON.stringify(corpo));
+}
+
+const erroAuth = (res, status, codigo) => json(res, status, { code: status, error_code: codigo, msg: `erro simulado: ${codigo}` });
+
+async function auth(req, res, url) {
+  const caminho = url.pathname.replace(/^\/auth\/v1/, '');
+  const corpo = req.method === 'GET' || req.method === 'DELETE' ? {} : await lerCorpo(req);
+
+  if (caminho === '/token' && url.searchParams.get('grant_type') === 'password') {
+    const u = USUARIOS.find((x) => x.email === corpo.email && x.senha && x.senha === corpo.password);
+    if (!u) return erroAuth(res, 400, 'invalid_credentials');
+    if (u.pendente) return erroAuth(res, 400, 'email_not_confirmed');
+    return json(res, 200, sessao(u, 'aal1'));
+  }
+  if (caminho === '/signup') {
+    // Anti-enumeração do GoTrue com "Confirm email" ligado: e-mail que já tem conta volta 200 com
+    // um usuário ofuscado de identities vazio (auth-js, doc de signUp).
+    const existe = USUARIOS.some((x) => x !== NOVO && x.email === corpo.email);
+    return json(res, 200, { ...usuarioGoTrue(NOVO, corpo.email), email_confirmed_at: null, identities: existe ? [] : [{ id: NOVO.id, provider: 'email' }] });
+  }
+  if (caminho === '/verify') {
+    if (corpo.token !== CODIGO_CERTO) return erroAuth(res, 403, 'otp_expired');
+    return json(res, 200, sessao(NOVO, 'aal1', corpo.email));
+  }
+  // O reenvio para "limitado@" simula o limite de 1 e-mail por minuto do Auth.
+  if (caminho === '/resend') return corpo.email === 'limitado@exemplo.test' ? erroAuth(res, 429, 'over_email_send_rate_limit') : json(res, 200, {});
+
+  const quem = lerToken(req);
+  if (!quem) return json(res, 401, { code: 401, error_code: 'bad_jwt', msg: 'token inválido' });
+  if (caminho === '/user') return json(res, 200, usuarioGoTrue(quem.usuario));
+  if (caminho === '/factors' && req.method === 'POST') {
+    const qr = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10" fill="white"/><rect x="2" y="2" width="6" height="6"/></svg>';
+    return json(res, 200, { id: FATOR_NOVO.id, type: 'totp', friendly_name: corpo.friendly_name, totp: { qr_code: qr, secret: 'SEGREDOFALSODOE2E', uri: 'otpauth://totp/exemplo' } });
+  }
+  const fator = caminho.match(/^\/factors\/([^/]+)(\/challenge|\/verify)?$/);
+  if (fator && req.method === 'DELETE') return json(res, 200, { id: fator[1] });
+  if (fator && fator[2] === '/challenge') return json(res, 200, { id: 'desafio-falso', type: 'totp', expires_at: 4102444800 });
+  if (fator && fator[2] === '/verify') {
+    if (corpo.code !== CODIGO_CERTO) return erroAuth(res, 422, 'mfa_verification_failed');
+    const { user, ...resto } = sessao(quem.usuario, 'aal2');
+    return json(res, 200, { ...resto, user });
+  }
+  return json(res, 404, { message: 'rota de auth do Supabase falso não existe: ' + caminho });
 }
 
 const SEM_LINHA = { code: 'PGRST116', details: 'The result contains 0 rows', hint: null, message: 'Cannot coerce the result to a single JSON object' };
@@ -86,6 +190,15 @@ const servidor = createServer((req, res) => {
     req.on('end', () => {
       let args;
       try { args = JSON.parse(corpo); } catch { return json(res, 400, { code: '22P02', message: 'json inválido' }); }
+      // Como o banco real: a função só executa com a service_role (REVOKE de anon e authenticated na
+      // migration), e o comprador tem de existir. O JWT do comprador nunca chega aqui: o servidor lê o
+      // `sub` dele pelo /user e manda o id em p_usuario_id.
+      if (String(req.headers.authorization ?? '') !== `Bearer ${CHAVE_SERVICO}`) {
+        return json(res, 401, { code: '42501', message: 'permission denied for function criar_pedido', details: null, hint: null });
+      }
+      if (!USUARIOS.some((u) => u.id === args.p_usuario_id)) {
+        return json(res, 409, { code: '23503', message: 'insert or update on table "pedidos" violates foreign key constraint', details: null, hint: null });
+      }
       const ids = (args.p_itens ?? []).map((i) => i.variacao_id);
       if (ids.includes(VARIACAO_BANCO_FORA)) return json(res, 404, { code: 'PGRST202', message: 'Could not find the function public.criar_pedido', details: null, hint: null });
       if (ids.includes(VARIACAO_ESGOTA_NA_RESERVA)) {
@@ -111,16 +224,11 @@ const servidor = createServer((req, res) => {
     return json(res, 200, FRETES.filter((f) => f.cep_inicio <= ate && f.cep_fim >= de));
   }
 
-  if (url.pathname === '/auth/v1/user') {
-    const token = String(req.headers.authorization ?? '').replace(/^Bearer /, '');
-    const u = USUARIOS[token];
-    if (!u) return json(res, 401, { code: 401, msg: 'token inválido' });
-    return json(res, 200, { id: u.id, aud: 'authenticated', role: 'authenticated', email: `${u.papel}@exemplo.test`, app_metadata: {}, user_metadata: {}, created_at: '2026-10-29T12:00:00Z' });
-  }
+  if (url.pathname.startsWith('/auth/v1/')) return void auth(req, res, url);
 
   if (url.pathname === '/rest/v1/perfis') {
     const id = (q.get('id') ?? '').replace(/^eq\./, '');
-    const u = Object.values(USUARIOS).find((x) => x.id === id);
+    const u = USUARIOS.find((x) => x.id === id);
     if (!u) return unico ? json(res, 406, SEM_LINHA) : json(res, 200, []);
     return json(res, 200, unico ? { papel: u.papel } : [{ papel: u.papel }]);
   }

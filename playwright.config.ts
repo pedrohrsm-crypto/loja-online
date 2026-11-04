@@ -10,6 +10,8 @@ const REUSAR_SERVIDOR = !process.env.CI && !process.env.E2E_PORTA;
 // e2e/apoio/desviar-supabase.cjs leva para ele toda chamada a *.supabase.co do servidor.
 const PORTA_SUPABASE_FALSO = PORTA + 1;
 const URL_SUPABASE_FALSO = `http://127.0.0.1:${PORTA_SUPABASE_FALSO}`;
+// Chave de serviço fictícia: o Next a usa no criar_pedido, e o falso só executa o RPC com ela.
+const CHAVE_SERVICO_FALSA = 'service-role-de-teste';
 
 export default defineConfig({
   testDir: 'e2e',
@@ -29,7 +31,7 @@ export default defineConfig({
       url: `${URL_SUPABASE_FALSO}/saude`,
       reuseExistingServer: REUSAR_SERVIDOR,
       timeout: 15_000,
-      env: { SUPABASE_FALSO_PORTA: String(PORTA_SUPABASE_FALSO) },
+      env: { SUPABASE_FALSO_PORTA: String(PORTA_SUPABASE_FALSO), SUPABASE_FALSO_CHAVE_SERVICO: CHAVE_SERVICO_FALSA },
     },
     {
       command: `npm run start -- -p ${PORTA}`,
@@ -39,8 +41,8 @@ export default defineConfig({
       env: {
         NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://exemplo.supabase.co',
         NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'anon-de-teste',
-        // O checkout chama criar_pedido com a service_role; o Supabase falso não confere a chave.
-        SUPABASE_SERVICE_ROLE_KEY: 'service-role-de-teste',
+        // O checkout chama criar_pedido com a service_role; o Supabase falso confere a chave.
+        SUPABASE_SERVICE_ROLE_KEY: CHAVE_SERVICO_FALSA,
         NODE_OPTIONS: '--require ./e2e/apoio/desviar-supabase.cjs',
         SUPABASE_FALSO_PORTA: String(PORTA_SUPABASE_FALSO),
       },

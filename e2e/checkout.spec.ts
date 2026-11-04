@@ -2,7 +2,8 @@
 // reais rodam por cima; a função criar_pedido falsa responde pelo id da variação (ver
 // e2e/apoio/supabase-falso.mjs). A reserva de verdade (T12, T13) é provada na bancada SQL.
 import { expect, test } from '@playwright/test';
-import { axe, entrarComo, semearCarrinho, semSobraNemAlvoPequeno, visivelSemRolar } from './apoio/comum';
+import { axe, semearCarrinho, semSobraNemAlvoPequeno, visivelSemRolar } from './apoio/comum';
+import { entrarComo } from './apoio/sessao';
 
 test.use({ viewport: { width: 360, height: 740 } });
 
@@ -11,10 +12,10 @@ const LAVANDA = { ...OLEO, variacaoId: 'a0000000-0000-4000-8000-000000000001', a
 const ESGOTA_NA_RESERVA = { ...OLEO, variacaoId: 'a0000000-0000-4000-8000-000000000002', aroma: 'alecrim', precoCentavos: 5200, quantidade: 1 };
 const BANCO_SEM_FUNCAO = { ...OLEO, variacaoId: 'a0000000-0000-4000-8000-000000000003', aroma: 'sem fragrância', precoCentavos: 5000, quantidade: 1 };
 
-test('sem sessão: a entrega vai para /entrar', async ({ page }) => {
+test('sem sessão: a entrega vai para /entrar e volta para /checkout depois de entrar', async ({ page }) => {
   await semearCarrinho(page, [LAVANDA], '20040-002');
   await page.goto('/checkout');
-  await expect(page).toHaveURL(/\/entrar$/);
+  await expect(page).toHaveURL(/\/entrar\?volta=%2Fcheckout$/);
 });
 
 test.describe('com sessão', () => {
@@ -66,6 +67,17 @@ test.describe('com sessão', () => {
     await expect(page.getByText(/Pedido nº B0000000 · R\$\s134,00/)).toBeVisible();
     await expect(page.getByText(/Separamos os seus itens até as \d{2}:\d{2}\. Nada foi cobrado/)).toBeVisible();
     expect(await axe(page)).toEqual([]);
+  });
+
+  test('a sessão terminou antes de reservar: o aviso leva a /entrar e volta para /checkout', async ({ page, context }) => {
+    await semearCarrinho(page, [LAVANDA], '01310-100');
+    await page.goto('/checkout');
+    await page.getByLabel('WhatsApp para combinar').fill('(11) 90000-0000');
+    await context.clearCookies();
+    await page.getByRole('button', { name: 'Reservar os itens' }).click();
+    const aviso = page.getByRole('alert').filter({ hasText: 'Sua sessão terminou' });
+    await expect(aviso).toBeVisible();
+    await expect(aviso.getByRole('link', { name: 'Entrar' })).toHaveAttribute('href', '/entrar?volta=%2Fcheckout');
   });
 
   test('WhatsApp e endereço em branco: o servidor recusa e cada campo diz o que fazer', async ({ page }) => {

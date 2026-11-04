@@ -17,6 +17,7 @@ import type { FreteRegiao } from '@/lib/catalogo/tipos';
 import { contarUnidades, situacaoDoItem, subtotalCentavos } from '@/lib/loja/carrinho';
 import { useCarrinho } from '@/lib/loja/carrinho-armazenamento';
 import { useConferencia } from '@/lib/loja/conferencia';
+import { comVolta } from '@/lib/seguranca/destino';
 import { MENSAGEM_FRETE, textoValorFrete } from '@/lib/loja/frete-texto';
 import type { ResultadoCriarPedido } from '@/lib/pedidos/criar';
 import { exigeEndereco, totalDoPedido } from '@/lib/pedidos/regras';
@@ -149,7 +150,7 @@ export function CheckoutVista() {
       {resultado && !resultado.ok && resultado.motivo === 'sem-sessao' ? (
         <Aviso tipo="erro" urgente titulo="Sua sessão terminou">
           Entre de novo para continuar. Seu carrinho continua salvo neste aparelho.{' '}
-          <Link href="/entrar" className="font-semibold underline underline-offset-4">
+          <Link href={comVolta('/entrar', '/checkout')} className="font-semibold underline underline-offset-4">
             Entrar
           </Link>
         </Aviso>

@@ -1,7 +1,7 @@
-// Passos compartilhados pelos specs da loja: axe, sobra e alvos a 140%, ação visível sem rolar,
-// sessão do Supabase falso e carrinho semeado no localStorage. Vieram de alta-fidelidade.spec.ts
-// quando o checkout (#27) passou a precisar dos mesmos passos: um lugar só.
-import { expect, type BrowserContext, type Page } from '@playwright/test';
+// Passos compartilhados pelos specs da loja: axe, sobra e alvos a 140%, ação visível sem rolar e
+// carrinho semeado no localStorage. Vieram de alta-fidelidade.spec.ts quando o checkout (#27) passou a
+// precisar dos mesmos passos: um lugar só. A sessão mora em e2e/apoio/sessao.ts (#30).
+import { expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { alvosPequenos, ampliar, inteiroEDescoberto, transbordo } from './medir';
 
@@ -25,18 +25,6 @@ export async function visivelSemRolar(page: Page, alvo: ReturnType<Page['getByRo
   await expect(alvo).toBeInViewport({ ratio: 1 });
   expect(await page.evaluate(() => window.scrollY)).toBe(0);
   expect(await inteiroEDescoberto(alvo), 'o alvo está coberto por uma barra fixa').toBe(true);
-}
-
-// Sessão do Supabase falso: o cookie que o @supabase/ssr lê, com o token que o falso reconhece.
-export async function entrarComo(context: BrowserContext, papel: 'admin' | 'cliente') {
-  const sessao = {
-    access_token: `token-${papel}`, refresh_token: 'renovacao', token_type: 'bearer', expires_in: 3600, expires_at: 4102444800,
-    user: { id: papel === 'admin' ? '00000000-0000-4000-8000-0000000000a1' : '00000000-0000-4000-8000-0000000000c1', aud: 'authenticated', role: 'authenticated', email: `${papel}@exemplo.test` },
-  };
-  const valor = 'base64-' + Buffer.from(JSON.stringify(sessao)).toString('base64url');
-  // O nome do cookie vem do começo do domínio da URL do Supabase (convenção do @supabase/ssr).
-  const ref = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://exemplo.supabase.co').hostname.split('.')[0];
-  await context.addCookies([{ name: `sb-${ref}-auth-token`, value: valor, domain: '127.0.0.1', path: '/' }]);
 }
 
 export async function semearCarrinho(page: Page, itens: unknown[], cep?: string) {
