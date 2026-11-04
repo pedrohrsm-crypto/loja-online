@@ -16,6 +16,13 @@ test('sem sessão: a entrega vai para /entrar e volta para /checkout depois de e
   await semearCarrinho(page, [LAVANDA], '20040-002');
   await page.goto('/checkout');
   await expect(page).toHaveURL(/\/entrar\?volta=%2Fcheckout$/);
+  // Entra pelo formulário (o falso aceita esta senha) e chega à entrega, com o CEP do carrinho.
+  await page.getByLabel('E-mail').fill('cliente@exemplo.test');
+  await page.getByLabel('Senha').fill('senha-do-cliente');
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await expect(page).toHaveURL(/\/checkout$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Entrega' })).toBeVisible();
+  await expect(page.getByLabel('CEP para o frete')).toHaveValue('20040-002');
 });
 
 test.describe('com sessão', () => {

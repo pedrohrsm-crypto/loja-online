@@ -74,7 +74,8 @@ export type Conferencia =
   | { ok: true; entrada: EntradaPedido }
   | { ok: false; erros: Partial<Record<CampoPedido, string>> };
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** Formato de uuid (variação, pedido). Um lugar só: criar.ts usa este. */
+export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function texto(valor: unknown, maximo: number): string | null {
   if (typeof valor !== 'string') return null;

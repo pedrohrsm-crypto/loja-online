@@ -8,7 +8,7 @@
 // função não existe e o resultado é 'indisponivel', nunca 500.
 import type { LeituraFrete } from '@/lib/catalogo/tipos';
 import { log } from '@/lib/observabilidade/logger';
-import { conferirEntrada, montarPedido, type CampoPedido } from './regras';
+import { UUID, conferirEntrada, montarPedido, type CampoPedido } from './regras';
 
 export type ItemMarcado =
   | { variacaoId: string; tipo: 'indisponivel' }
@@ -47,8 +47,6 @@ export type PortasCriarPedido = {
   lerFrete: (cep: string) => Promise<LeituraFrete>;
   criarNoBanco: (args: ArgumentosCriarPedido) => Promise<{ data: unknown; error: ErroBanco | null }>;
 };
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function inteiro(v: unknown): v is number {
   return typeof v === 'number' && Number.isSafeInteger(v) && v >= 0;
