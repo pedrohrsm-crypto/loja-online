@@ -37,11 +37,10 @@ jobs:
           fi
           # 2 tentativas com espera: uma falha de rede passageira não vira alarme falso.
           for tentativa in 1 2; do
-            status=$(curl -sS -o resposta.json -w '%{http_code}' --max-time 60 -X POST \
+            status=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 60 -X POST \
               -H "Authorization: Bearer ${CRON_SECRET}" "${RECONCILIAR_URL}" || echo 000)
+            # Só o status: o corpo (resumo da rodada) não vai para o log, que é público neste repositório.
             echo "tentativa ${tentativa}: HTTP ${status}"
-            cat resposta.json 2>/dev/null || true
-            echo
             if [ "${status}" = "200" ]; then exit 0; fi
             sleep 20
           done

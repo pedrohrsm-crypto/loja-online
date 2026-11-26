@@ -47,9 +47,13 @@ export default async function PaginaPagamento({ params }: PageProps<'/checkout/p
       await consultarPix(interno, config.config, portas);
       // Relê: a consulta pode ter confirmado o pagamento ou completado o QR.
       ({ data, error } = await ler());
+      if (error) {
+        log.error('pagamentos.tela', 'pedido não relido depois da consulta', { codigo: error.code, schemaAntigo: ehColunaAusente(error.code) });
+        return <PixVista tela={null} />;
+      }
     }
   }
-  const tela = data && !error ? montarTelaAgora(data as LinhaTela) : null;
+  const tela = data ? montarTelaAgora(data as LinhaTela) : null;
   if (!tela) return <PixVista tela={null} />;
   return <PixVista tela={tela} />;
 }
