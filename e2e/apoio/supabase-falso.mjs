@@ -17,6 +17,7 @@
 // - qualquer outro e-mail no cadastro vira o comprador novo depois do código.
 // O código certo, do e-mail e do autenticador, é sempre 123456.
 import { createServer } from 'node:http';
+import { tratarPedidos } from './pedidos-falso.mjs';
 
 const PORTA = Number(process.env.SUPABASE_FALSO_PORTA ?? 3101);
 
@@ -183,6 +184,14 @@ const servidor = createServer((req, res) => {
   const q = url.searchParams;
 
   if (url.pathname === '/saude') return json(res, 200, { ok: true });
+
+  // Pix (#32): pedidos, RPCs do pagamento e as rotas de semear do e2e (e2e/apoio/pedidos-falso.mjs).
+  if (url.pathname.startsWith('/teste/') || url.pathname === '/rest/v1/pedidos' || url.pathname === '/rest/v1/eventos_pagamento'
+    || (url.pathname.startsWith('/rest/v1/rpc/') && url.pathname !== '/rest/v1/rpc/criar_pedido')) {
+    const servico = String(req.headers.authorization ?? '') === `Bearer ${CHAVE_SERVICO}`;
+    return void tratarPedidos(req, res, url, { json, quem: servico ? null : lerToken(req)?.usuario ?? null, servico })
+      .then((tratou) => tratou || json(res, 404, { message: 'rota do Supabase falso não existe: ' + url.pathname }));
+  }
 
   if (url.pathname === '/rest/v1/rpc/criar_pedido' && req.method === 'POST') {
     let corpo = '';

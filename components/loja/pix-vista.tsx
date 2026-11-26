@@ -1,38 +1,64 @@
 'use client';
 
-// Pagamento Pix (L4), com DADOS DE EXEMPLO (lib/loja/exemplos.ts). Nenhuma chamada ao Mercado Pago.
-// Nunca promete "aprovação na hora": o Pix confirma "em instantes", e o estado "em confirmação"
-// existe porque pagar no limite do prazo pode demorar a aparecer.
+// Pagamento Pix (tela 7), com o Pix REAL do Mercado Pago (#32). Os textos, estados e a ordem das ações
+// são os da alta fidelidade aprovada (L4 do #21). Nunca promete "aprovação na hora": o Pix confirma "em
+// instantes", e o estado "em confirmação" existe porque pagar no limite do prazo pode demorar a aparecer.
+// O estado vem do servidor (a página relê o pedido a cada 10 s); aqui só se desconta o relógio local.
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { gerarPixDoPedido } from '@/app/checkout/pagamento/[pedido]/acoes';
 import { formatarPreco } from '@/lib/catalogo/preco';
-import { AVISO_EXEMPLO, CODIGO_PIX_EXEMPLO, type PedidoPixExemplo } from '@/lib/loja/exemplos';
+import { tirarItensPagos } from '@/lib/loja/carrinho';
+import { gravarCarrinho, lerCarrinhoAgora } from '@/lib/loja/carrinho-armazenamento';
 import { formatarContagem, PRAZO_PIX_SEGUNDOS, segundosRestantes, situacaoExibida } from '@/lib/loja/pix';
 import { linkWhatsapp, mensagemPedido } from '@/lib/loja/whatsapp';
+import type { TelaPix } from '@/lib/pagamentos/tela';
 import { estiloBotao } from '@/lib/ui/botao';
 import { Aviso } from './aviso';
 import { BarraAcao } from './barra-acao';
-import { NotaExemplo } from './nota-exemplo';
 import { EstadoVazio } from './estado-vazio';
-import { QrExemplo } from './qr-exemplo';
 
 const ATUALIZA_A_CADA_MS = 10_000;
 
-export function PixVista({ pedido }: { pedido: PedidoPixExemplo }) {
+function Indisponivel({ numero }: { numero: string | null }) {
+  return (
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold">Pague com Pix</h1>
+      <Aviso tipo="erro" urgente titulo="O Pix está indisponível agora">
+        Nada foi cobrado. Tente de novo em alguns minutos; se continuar, fale com a gente pelo WhatsApp.
+      </Aviso>
+      <BarraAcao>
+        <a href={linkWhatsapp(numero ? mensagemPedido(numero) : 'Olá! Não consegui pagar com Pix.')} target="_blank" rel="noopener noreferrer" className={estiloBotao('primario', 'w-full')}>
+          Falar no WhatsApp<span className="sr-only"> (abre em outra aba)</span>
+        </a>
+      </BarraAcao>
+    </div>
+  );
+}
+
+export function PixVista({ tela }: { tela: TelaPix | null }) {
+  if (!tela) return <Indisponivel numero={null} />;
+  return <PixDoPedido tela={tela} />;
+}
+
+function PixDoPedido({ tela }: { tela: TelaPix }) {
   const router = useRouter();
-  const [restante, setRestante] = useState(pedido.segundosRestantes);
+  const [restante, setRestante] = useState(tela.segundosRestantes);
   const [jaPaguei, setJaPaguei] = useState(false);
   const [copia, setCopia] = useState<'nao' | 'sim' | 'erro'>('nao');
-  const situacao = situacaoExibida(pedido.situacao, restante, jaPaguei);
+  const [falhaAoGerar, setFalhaAoGerar] = useState(false);
+  const pediu = useRef(false);
+  const servidor = tela.situacao === 'gerando' ? 'aguardando' : tela.situacao;
+  const situacao = situacaoExibida(servidor, restante, jaPaguei);
 
   // Contagem: o prazo vem do servidor (segundos); aqui só se desconta o relógio local.
   useEffect(() => {
-    if (pedido.situacao !== 'aguardando') return;
-    const fim = Date.now() + pedido.segundosRestantes * 1000;
+    if (tela.situacao !== 'aguardando' && tela.situacao !== 'gerando') return;
+    const fim = Date.now() + tela.segundosRestantes * 1000;
     const t = setInterval(() => setRestante(segundosRestantes(fim, Date.now())), 1000);
     return () => clearInterval(t);
-  }, [pedido.situacao, pedido.segundosRestantes]);
+  }, [tela.situacao, tela.segundosRestantes]);
 
   // "Atualiza sozinho": enquanto espera, relê o pedido no servidor a cada 10 s.
   useEffect(() => {
@@ -41,56 +67,60 @@ export function PixVista({ pedido }: { pedido: PedidoPixExemplo }) {
     return () => clearInterval(t);
   }, [situacao, router]);
 
+  // Pedido aberto sem Pix: pede ao servidor uma vez e relê a página.
+  useEffect(() => {
+    if (tela.situacao !== 'gerando' || pediu.current) return;
+    pediu.current = true;
+    gerarPixDoPedido(tela.pedidoId)
+      .then((r) => (r.ok || r.motivo !== 'indisponivel' ? router.refresh() : setFalhaAoGerar(true)))
+      .catch(() => setFalhaAoGerar(true));
+  }, [tela.situacao, tela.pedidoId, router]);
+
+  // Pagamento confirmado: o carrinho esvazia do que o pedido levou (L6).
+  useEffect(() => {
+    if (tela.situacao !== 'pago') return;
+    const atual = lerCarrinhoAgora();
+    const resto = tirarItensPagos(atual, tela.itens);
+    if (resto.length !== atual.length || resto.some((i, n) => i.quantidade !== atual[n].quantidade)) gravarCarrinho(resto);
+  }, [tela.situacao, tela.itens]);
+
   async function copiar() {
+    if (!tela.qrCode) return;
     try {
-      await navigator.clipboard.writeText(CODIGO_PIX_EXEMPLO);
+      await navigator.clipboard.writeText(tela.qrCode);
       setCopia('sim');
     } catch {
       setCopia('erro');
     }
   }
 
-  const exemplo = <NotaExemplo texto={AVISO_EXEMPLO} />;
-
   if (situacao === 'pago') {
     return (
-      <div className="space-y-4">
-        {exemplo}
-        <EstadoVazio titulo="Este pedido já foi pago" texto={`O pagamento do pedido nº ${pedido.numero} já foi confirmado. Não é preciso pagar de novo.`}>
-          <Link href="/conta" className={estiloBotao('primario')}>Ver minha conta</Link>
-        </EstadoVazio>
-      </div>
+      <EstadoVazio titulo="Pagamento confirmado" texto={`Recebemos o pagamento do pedido nº ${tela.numero}. Não é preciso pagar de novo: agora é com a gente separar os seus itens.`}>
+        <Link href="/conta" className={estiloBotao('primario')}>Ver minha conta</Link>
+      </EstadoVazio>
     );
   }
 
   if (situacao === 'cancelado') {
     return (
-      <div className="space-y-4">
-        {exemplo}
-        <EstadoVazio titulo="Este pedido foi cancelado" texto={`O prazo de pagamento do pedido nº ${pedido.numero} acabou e os itens voltaram para a loja. Monte o carrinho de novo para comprar.`}>
-          <Link href="/carrinho" className={estiloBotao('primario')}>Montar o carrinho de novo</Link>
-        </EstadoVazio>
-      </div>
+      <EstadoVazio titulo="Este pedido foi cancelado" texto={`O pedido nº ${tela.numero} foi cancelado e os itens voltaram para a loja. Se você mudou o carrinho, pague o pedido novo; se não, monte o carrinho de novo.`}>
+        <Link href="/carrinho" className={estiloBotao('primario')}>Ir para o carrinho</Link>
+      </EstadoVazio>
     );
   }
 
   if (situacao === 'em-confirmacao') {
     return (
       <div className="space-y-4">
-        {exemplo}
         <div className="space-y-2" role="status">
           <h1 className="text-2xl font-bold">Estamos confirmando seu pagamento</h1>
           <p className="text-texto-suave">Se você pagou perto do fim do prazo, a confirmação pode demorar. Não pague de novo: esta página atualiza sozinha.</p>
-          <p className="text-sm text-texto-suave">Pedido nº {pedido.numero} · {formatarPreco(pedido.totalCentavos)}</p>
+          <p className="text-sm text-texto-suave">Pedido nº {tela.numero} · {formatarPreco(tela.totalCentavos)}</p>
         </div>
         <BarraAcao>
-          <a
-            href={linkWhatsapp(mensagemPedido(pedido.numero))}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={estiloBotao('primario', 'w-full')}
-          >
-            Falar no WhatsApp (pedido nº {pedido.numero})<span className="sr-only"> (abre em outra aba)</span>
+          <a href={linkWhatsapp(mensagemPedido(tela.numero))} target="_blank" rel="noopener noreferrer" className={estiloBotao('primario', 'w-full')}>
+            Falar no WhatsApp (pedido nº {tela.numero})<span className="sr-only"> (abre em outra aba)</span>
           </a>
         </BarraAcao>
       </div>
@@ -100,7 +130,6 @@ export function PixVista({ pedido }: { pedido: PedidoPixExemplo }) {
   if (situacao === 'expirado') {
     return (
       <div className="space-y-4">
-        {exemplo}
         <h1 className="text-2xl font-bold">O Pix expirou</h1>
         <p className="text-texto-suave">O prazo de {PRAZO_PIX_SEGUNDOS / 60} minutos acabou.</p>
         <Aviso tipo="atencao" titulo="Você já pagou?">
@@ -118,20 +147,37 @@ export function PixVista({ pedido }: { pedido: PedidoPixExemplo }) {
     );
   }
 
+  if (tela.situacao === 'gerando' || !tela.qrCode) {
+    if (falhaAoGerar) return <Indisponivel numero={tela.numero} />;
+    return (
+      <div className="space-y-3" role="status">
+        <h1 className="text-2xl font-bold">Pague com Pix</h1>
+        <p className="text-texto-suave">Gerando o seu Pix de {formatarPreco(tela.totalCentavos)}…</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {exemplo}
       <h1 className="text-2xl font-bold">Pague com Pix</h1>
       <p>
-        <span className="font-bold">{formatarPreco(pedido.totalCentavos)}</span> · expira em{' '}
+        <span className="font-bold">{formatarPreco(tela.totalCentavos)}</span> · expira em{' '}
         <time role="timer" className="font-bold tabular-nums">{formatarContagem(restante)}</time>
       </p>
-      <QrExemplo semente={Number(pedido.numero)} />
+      {tela.qrCodeBase64 ? (
+        <div className="mx-auto w-48 max-w-full rounded-md border border-borda bg-qr-fundo p-1">
+          {/* Imagem que o Mercado Pago gera para este Pix (data URL): o next/image não otimiza nada aqui. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`data:image/png;base64,${tela.qrCodeBase64}`} alt={`QR code do Pix do pedido nº ${tela.numero}`} className="block h-auto w-full" />
+        </div>
+      ) : (
+        <p className="text-sm text-texto-suave">Use o código copia e cola abaixo no aplicativo do seu banco.</p>
+      )}
       <div className="space-y-1 rounded-cartao border border-borda bg-superficie p-4 shadow-cartao">
-        <p className="text-sm font-semibold">Pix copia e cola (exemplo)</p>
-        <code className="block break-all text-sm select-all">{CODIGO_PIX_EXEMPLO}</code>
+        <p className="text-sm font-semibold">Pix copia e cola</p>
+        <code className="block break-all text-sm select-all">{tela.qrCode}</code>
       </div>
-      <p className="text-sm text-texto-suave">Na loja de verdade, esta página atualiza sozinha quando o pagamento chegar.</p>
+      <p className="text-sm text-texto-suave">Pedido nº {tela.numero}. Esta página atualiza sozinha quando o pagamento chegar.</p>
       <div data-testid="barra-copiar" className="sticky bottom-(--altura-navegacao) z-30 -mx-4 space-y-1 border-t border-borda bg-fundo px-4 py-3">
         <button type="button" className={estiloBotao('primario', 'w-full')} onClick={copiar}>
           Copiar código Pix

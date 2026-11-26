@@ -126,3 +126,31 @@ export function lerCarrinhoSeguro(texto: string | null): ItemCarrinho[] {
   }
   return itens;
 }
+
+// Pagamento confirmado (L6, decisão do PM em 4-Nov): o carrinho esvazia. Tira do carrinho o que o
+// pedido PAGO levou, variação por variação: no caso comum (o carrinho é o do pedido) sobra vazio; se o
+// comprador montou outro carrinho depois de gerar o Pix (T18), o que é do pedido novo continua lá.
+export function tirarItensPagos(itens: readonly ItemCarrinho[], pagos: readonly { variacaoId: string; quantidade: number }[]): ItemCarrinho[] {
+  const saida: ItemCarrinho[] = [];
+  for (const i of itens) {
+    const pago = pagos.find((p) => p.variacaoId === i.variacaoId)?.quantidade ?? 0;
+    const resta = i.quantidade - pago;
+    if (resta > 0) saida.push({ ...i, quantidade: resta });
+  }
+  return saida;
+}
+
+// A reserva do próprio comprador já saiu do estoque que a vitrine mostra (#27): sem devolvê-la à conta,
+// o carrinho dele marcava "Esgotado" o item que ele mesmo reservou (L6). Soma de volta, só para ele, o
+// que o pedido aberto dele reserva, como a função criar_pedido faz ao substituir o pedido.
+export function somarReservaPropria(
+  atuais: Readonly<Record<string, SituacaoAtual>>,
+  reservados: readonly { variacaoId: string; quantidade: number }[],
+): Record<string, SituacaoAtual> {
+  const saida: Record<string, SituacaoAtual> = { ...atuais };
+  for (const r of reservados) {
+    const a = saida[r.variacaoId];
+    if (a && Number.isSafeInteger(r.quantidade) && r.quantidade > 0) saida[r.variacaoId] = { ...a, estoque: a.estoque + r.quantidade };
+  }
+  return saida;
+}

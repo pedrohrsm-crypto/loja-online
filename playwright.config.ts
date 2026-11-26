@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { SEGREDO_WEBHOOK_FALSO } from './e2e/apoio/pix';
 
 // A suíte inteira roda sempre: quem decide o que roda é este arquivo, não a linha de comando.
 // Porta isolada por variável (E2E_PORTA), para duas frentes rodarem a suíte na mesma máquina sem
@@ -12,6 +13,10 @@ const PORTA_SUPABASE_FALSO = PORTA + 1;
 const URL_SUPABASE_FALSO = `http://127.0.0.1:${PORTA_SUPABASE_FALSO}`;
 // Chave de serviço fictícia: o Next a usa no criar_pedido, e o falso só executa o RPC com ela.
 const CHAVE_SERVICO_FALSA = 'service-role-de-teste';
+// Mercado Pago falso (#32): e2e/apoio/mercadopago-falso.mjs, para onde e2e/apoio/desviar-mercadopago.cjs leva
+// toda chamada a api.mercadopago.com. Token e segredo do webhook FICTÍCIOS: o e2e assina as notificações
+// com o mesmo segredo (e2e/apoio/pix.ts).
+const PORTA_MP_FALSO = PORTA + 2;
 
 export default defineConfig({
   testDir: 'e2e',
@@ -34,6 +39,13 @@ export default defineConfig({
       env: { SUPABASE_FALSO_PORTA: String(PORTA_SUPABASE_FALSO), SUPABASE_FALSO_CHAVE_SERVICO: CHAVE_SERVICO_FALSA },
     },
     {
+      command: 'node e2e/apoio/mercadopago-falso.mjs',
+      url: `http://127.0.0.1:${PORTA_MP_FALSO}/saude`,
+      reuseExistingServer: REUSAR_SERVIDOR,
+      timeout: 15_000,
+      env: { MERCADOPAGO_FALSO_PORTA: String(PORTA_MP_FALSO) },
+    },
+    {
       command: `npm run start -- -p ${PORTA}`,
       url: `http://127.0.0.1:${PORTA}`,
       reuseExistingServer: REUSAR_SERVIDOR,
@@ -43,8 +55,12 @@ export default defineConfig({
         NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'anon-de-teste',
         // O checkout chama criar_pedido com a service_role; o Supabase falso confere a chave.
         SUPABASE_SERVICE_ROLE_KEY: CHAVE_SERVICO_FALSA,
-        NODE_OPTIONS: '--require ./e2e/apoio/desviar-supabase.cjs',
+        NODE_OPTIONS: '--require ./e2e/apoio/desviar-supabase.cjs --require ./e2e/apoio/desviar-mercadopago.cjs',
         SUPABASE_FALSO_PORTA: String(PORTA_SUPABASE_FALSO),
+        MERCADOPAGO_FALSO_PORTA: String(PORTA_MP_FALSO),
+        PAGAMENTO_MODO: 'teste',
+        MERCADOPAGO_ACCESS_TOKEN: 'APP_USR-token-ficticio-do-e2e',
+        MERCADOPAGO_WEBHOOK_SECRET: SEGREDO_WEBHOOK_FALSO,
       },
     },
   ],

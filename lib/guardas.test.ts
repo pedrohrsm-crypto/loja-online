@@ -89,6 +89,16 @@ describe('catracas', () => {
     expect(achados).toEqual([]);
   });
 
+  it('o access token do Mercado Pago só é lido em lib/pagamentos/config.ts, e o cliente HTTP é server-only (#32)', () => {
+    const leem = FONTES.filter((f) => f.texto.includes('MERCADOPAGO_ACCESS_TOKEN') && f.arquivo !== 'lib/pagamentos/config.ts').map((f) => f.arquivo);
+    expect(leem).toEqual([]);
+    // Todo arquivo que fala com a API do Mercado Pago (ou monta o Bearer) começa com import 'server-only'.
+    const semGuarda = FONTES.filter((f) => /api\.mercadopago\.com|accessToken\}/.test(f.texto) && !/^(\/\/.*\n)*import 'server-only';/m.test(f.texto)).map((f) => f.arquivo);
+    expect(semGuarda).toEqual([]);
+    const telas = FONTES.filter((f) => /^['"]use client['"]/.test(f.texto) && /pagamentos\/(mercadopago|repositorios|config)['"]/.test(f.texto)).map((f) => f.arquivo);
+    expect(telas).toEqual([]);
+  });
+
   it("nenhum arquivo 'use client' importa o cliente admin", () => {
     const achados = FONTES.filter((f) => /^['"]use client['"]/.test(f.texto) && /supabase\/admin/.test(f.texto)).map((f) => f.arquivo);
     expect(achados).toEqual([]);

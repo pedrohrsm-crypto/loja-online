@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   adicionar, contarUnidades, continuarComDisponiveis, definirQuantidade, lerCarrinhoSeguro, limitarQuantidade,
-  linhaEfetiva, remover, situacaoDoItem, subtotalCentavos, type ItemCarrinho,
+  linhaEfetiva, remover, situacaoDoItem, somarReservaPropria, subtotalCentavos, tirarItensPagos, type ItemCarrinho,
 } from './carrinho';
 import { QUANTIDADE_MAXIMA, tetoDoItem } from '@/lib/pedidos/regras';
 
@@ -129,5 +129,30 @@ describe('leitura do localStorage (nunca confiar no texto salvo)', () => {
 
   it('preço fracionado não passa (dinheiro é centavo inteiro)', () => {
     expect(lerCarrinhoSeguro(JSON.stringify([{ ...SAB, precoCentavos: 20.5 }]))).toEqual([]);
+  });
+});
+
+describe('carrinho depois do pagamento e reserva própria (L6, #32)', () => {
+  const item = (variacaoId: string, quantidade: number) => ({ variacaoId, slug: 's', nome: 'n', aroma: 'a', tamanho: 't', precoCentavos: 100, quantidade });
+
+  it('pagamento confirmado esvazia o carrinho que era o do pedido', () => {
+    expect(tirarItensPagos([item('v1', 2), item('v2', 1)], [{ variacaoId: 'v1', quantidade: 2 }, { variacaoId: 'v2', quantidade: 1 }])).toEqual([]);
+  });
+
+  it('T18: o que o comprador pôs depois do Pix continua no carrinho', () => {
+    expect(tirarItensPagos([item('v1', 3), item('v3', 1)], [{ variacaoId: 'v1', quantidade: 2 }])).toEqual([item('v1', 1), item('v3', 1)]);
+  });
+
+  it('a reserva do próprio comprador volta para a conta dele: não aparece como esgotado', () => {
+    const atuais = { v1: { precoCentavos: 100, estoque: 0 }, v2: { precoCentavos: 100, estoque: 4 } };
+    const somado = somarReservaPropria(atuais, [{ variacaoId: 'v1', quantidade: 2 }]);
+    expect(somado).toEqual({ v1: { precoCentavos: 100, estoque: 2 }, v2: { precoCentavos: 100, estoque: 4 } });
+    expect(situacaoDoItem(item('v1', 2), somado.v1)).toEqual({ tipo: 'ok' });
+    expect(atuais.v1.estoque).toBe(0);
+  });
+
+  it('reserva de variação que saiu do ar não a traz de volta, e quantidade estranha não soma', () => {
+    expect(somarReservaPropria({}, [{ variacaoId: 'v9', quantidade: 2 }])).toEqual({});
+    expect(somarReservaPropria({ v1: { precoCentavos: 1, estoque: 1 } }, [{ variacaoId: 'v1', quantidade: -3 }, { variacaoId: 'v1', quantidade: 1.5 }])).toEqual({ v1: { precoCentavos: 1, estoque: 1 } });
   });
 });

@@ -5,7 +5,8 @@
 // formato serializável que volta para o navegador. O CEP não vai para o log.
 import { lerFretePorCep, lerProdutoPorSlug } from '@/lib/catalogo/ler';
 import type { FreteRegiao } from '@/lib/catalogo/tipos';
-import type { SituacaoAtual } from './carrinho';
+import { somarReservaPropria, type SituacaoAtual } from './carrinho';
+import { lerReservaPropria } from './carrinho-reserva';
 import { MENSAGEM_FRETE } from './frete-texto';
 
 export type ResultadoFrete =
@@ -37,5 +38,6 @@ export async function conferirCarrinho(slugs: unknown): Promise<ResultadoConfere
     if (!l.ok) return { ok: false };
     for (const v of l.dados?.variacoes ?? []) atuais[v.id] = { precoCentavos: v.precoCentavos, estoque: v.estoque };
   }
-  return { ok: true, atuais };
+  // A reserva do próprio comprador não conta como "esgotado" para ele (L6, #32).
+  return { ok: true, atuais: somarReservaPropria(atuais, await lerReservaPropria()) };
 }
