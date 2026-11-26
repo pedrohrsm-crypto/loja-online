@@ -7,14 +7,15 @@
 // - `live_mode` diferente de PAGAMENTO_MODO → 200 com aviso no log, nada muda (T16).
 // - Cada notificação é reservada antes de tocar em estado (T8); o EFEITO também é idempotente: a função
 //   de banco paga uma vez só, então duas notificações distintas do mesmo pagamento pagam uma vez (T9).
-// - Falha transitória (Mercado Pago ou banco fora) → devolve a reserva e responde 500: o Mercado Pago
-//   tenta de novo a cada 15 min, e a reconciliação cobre o resto (T11; 04, 3.1).
+// - Falha transitória (Mercado Pago ou banco fora) ou credencial recusada (401/403) → devolve a reserva
+//   e responde 500: o Mercado Pago tenta de novo a cada 15 min, e a reconciliação cobre o resto (T11; 04, 3.1).
 // - Dado que reentregar não conserta (order inexistente, formato estranho) → 200 e concluído.
 // - Responder dentro de 22 s: um GET de no máximo 8 s, uma chamada ao banco e nada de e-mail aqui.
+import { createHash } from 'node:crypto';
 import { log, infoDoErro } from '@/lib/observabilidade/logger';
 import { verificarAssinatura } from './assinatura';
 import type { LeituraConfigMP } from './config';
-import { FalhaTransitoria, conferirOrder, type PortasConfirmacao } from './confirmar';
+import { FalhaConfiguracao, FalhaTransitoria, conferirOrder, type PortasConfirmacao } from './confirmar';
 
 export type Reserva = 'reservado' | 'recuperado' | 'duplicado' | 'em-andamento';
 
@@ -75,8 +76,11 @@ export async function processarWebhook(p: {
   }
 
   // Uma notificação = order + request-id: a reentrega da MESMA notificação é duplicada (T8); outra
-  // notificação do mesmo pagamento passa, e o efeito idempotente do banco segura (T9).
-  const idEvento = `mp:${orderId}:${(p.xRequestId ?? '').slice(0, 80)}`;
+  // notificação do mesmo pagamento passa, e o efeito idempotente do banco segura (T9). Sem x-request-id,
+  // a notificação se identifica pelo corpo: a reentrega idêntica é duplicada, e o "pago" que chega depois
+  // do "aguardando" passa (devolução de 4-Nov, item 1).
+  const requisicao = p.xRequestId?.trim().slice(0, 80) || `corpo-${createHash('sha256').update(p.corpo).digest('hex').slice(0, 32)}`;
+  const idEvento = `mp:${orderId}:${requisicao}`;
   let reserva: Reserva;
   try {
     reserva = await p.eventos.reservar(idEvento, `order.${typeof corpo.action === 'string' ? corpo.action.slice(0, 40) : 'desconhecida'}`);
@@ -93,7 +97,7 @@ export async function processarWebhook(p: {
     const c = await conferirOrder(orderId, modo, p.portas, ESCOPO);
     resultado = c.tipo === 'confirmado' ? c.resultado : c.tipo === 'sem-efeito' ? c.situacao : 'invalido';
   } catch (e) {
-    log.error(ESCOPO, 'falha transitória', { order: orderId, transitoria: e instanceof FalhaTransitoria, ...infoDoErro(e) });
+    log.error(ESCOPO, 'falha transitória', { order: orderId, transitoria: e instanceof FalhaTransitoria, configuracao: e instanceof FalhaConfiguracao, ...infoDoErro(e) });
     await p.eventos.devolver(idEvento).catch((e2) => log.error(ESCOPO, 'falha ao devolver reserva', infoDoErro(e2)));
     return { status: 500, corpo: { erro: 'falha transitória' } };
   }

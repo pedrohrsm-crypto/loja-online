@@ -46,7 +46,8 @@ export interface PortasCobranca extends PortasConfirmacao {
   cancelarOrder(orderId: string, chave: string): Promise<{ ok: boolean; transitorio: boolean }>;
   /** Pedidos cancelados do comprador com order ainda viva no Mercado Pago. */
   cobrancasVivasCanceladas(usuarioId: string): Promise<{ id: string; mpOrderId: string }[]>;
-  marcarCanceladaNoMP(pedidoId: string): Promise<void>;
+  /** true = 1 linha marcada; false = 0 linhas (outro já marcou, ou o pedido mudou). Lança em erro de banco. */
+  marcarCanceladaNoMP(pedidoId: string): Promise<boolean>;
 }
 
 export type ResultadoGerarPix =
@@ -97,8 +98,7 @@ export async function cancelarSubstituidos(usuarioId: string, portas: PortasCobr
         log.warn(ESCOPO, 'cancelamento da order anterior falhou; a reconciliação decide pelo GET', { pedido: v.id, transitorio: r.transitorio });
         continue;
       }
-      await portas.marcarCanceladaNoMP(v.id);
-      canceladas += 1;
+      if (await portas.marcarCanceladaNoMP(v.id)) canceladas += 1;
     } catch (e) {
       log.error(ESCOPO, 'falha ao cancelar a order anterior', { pedido: v.id, erro: e instanceof Error ? e.message : String(e) });
     }
@@ -151,8 +151,23 @@ export async function gerarPix(
     return { ok: false, motivo: 'indisponivel' };
   }
   if (!gravou) {
-    // O pedido saiu de 'aberto' entre a leitura e a gravação (expirou ou foi substituído): a order
-    // nova não pode ficar viva sem pedido. Cancela; se falhar, fica no log (a order expira em 30 min).
+    // 0 linhas tem duas causas, e só uma permite cancelar (devolução do PM de 4-Nov, bloqueante 1):
+    // - outra aba, com a MESMA chave, recebeu a MESMA order e gravou primeiro → é o Pix válido: sucesso;
+    // - o pedido saiu de 'aberto' (expirou ou foi substituído) → a order nova não pode ficar viva sem
+    //   pedido: cancela; se falhar, fica no log (a order expira em 30 min).
+    // Sem conseguir reler, não cancela: a order pode ser a da outra aba. Nesse caso a tela nunca mostrou
+    // este QR, e a order expira sozinha em 30 min.
+    let atual: PedidoParaPix | null;
+    try {
+      atual = await portas.lerPedido(pedido.id);
+    } catch (e) {
+      log.error(ESCOPO, 'falha ao reler o pedido depois de gravar 0 linhas; a order não é cancelada', { pedido: pedido.id, order: order.id, erro: e instanceof Error ? e.message : String(e) });
+      return { ok: false, motivo: 'indisponivel' };
+    }
+    if (atual?.mpOrderId === order.id) {
+      log.info(ESCOPO, 'a outra aba já gravou a mesma order', { pedido: pedido.id, order: order.id });
+      return { ok: true, criada: false };
+    }
     log.warn(ESCOPO, 'pedido mudou antes de gravar a order; cancelando a order', { pedido: pedido.id, order: order.id });
     const c = await portas.cancelarOrder(order.id, chaveDoCancelamento(pedido.id)).catch(() => ({ ok: false, transitorio: true }));
     if (!c.ok) log.error(ESCOPO, 'order órfã não cancelada', { pedido: pedido.id, order: order.id });
@@ -179,4 +194,3 @@ export async function consultarPix(pedido: PedidoParaPix, config: ConfigMP, port
   }
   return 'sem-mudanca';
 }
-

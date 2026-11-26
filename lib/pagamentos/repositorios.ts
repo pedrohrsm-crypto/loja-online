@@ -48,8 +48,12 @@ export function repositorioEventos(db: SupabaseClient): RepositorioEventos {
       if (!r.ok) throw new FalhaTransitoria('concluir evento');
     },
     async devolver(id) {
-      const { error } = await db.from('eventos_pagamento').delete().eq('id', id).is('processado_em', null);
-      if (error) throw erroDeBanco('devolver evento', error.code);
+      // 0 linhas não lança (a reserva já foi concluída ou venceu e outra instância a retomou), mas fica no
+      // log pelo `escrever` (devolução de 4-Nov, item 3).
+      const r = await escrever(db.from('eventos_pagamento').delete().eq('id', id).is('processado_em', null).select('id'), {
+        esperado: 1, escopo: 'pagamentos.evento.devolver', contexto: { evento: id },
+      });
+      if (r.erro) throw erroDeBanco('devolver evento', r.erro.code);
     },
   };
 }
@@ -58,7 +62,7 @@ function portasConfirmacao(db: SupabaseClient, config: ConfigMP): PortasConfirma
   return {
     async buscarOrder(orderId) {
       const r = await chamarMP<unknown>(config, caminhoDaOrder(orderId), { escopo: 'pagamentos.mp.ler' });
-      return r.ok ? { ok: true, json: r.dados } : { ok: false, transitorio: r.transitorio };
+      return r.ok ? { ok: true, json: r.dados } : { ok: false, transitorio: r.transitorio, status: r.status };
     },
     async confirmar(a) {
       const { data, error } = await db.rpc('confirmar_pagamento_mp', {
@@ -82,6 +86,7 @@ async function marcarCanceladaNoMP(db: SupabaseClient, pedidoId: string) {
     { esperado: 1, escopo: 'pagamentos.mp.cancelada', contexto: { pedido: pedidoId } },
   );
   if (r.erro) throw erroDeBanco('marcar cancelada', r.erro.code);
+  return r.ok;
 }
 
 const COLUNAS_PIX = 'id, usuario_id, status, total_centavos, expira_em, produto, mp_order_id, mp_qr_code, mp_qr_code_base64';
@@ -159,9 +164,11 @@ export function portasReconciliacao(db: SupabaseClient, config: ConfigMP): Porta
     expirarVencidos: () => expirarPedidosVencidos(db),
     async pedidosComOrderViva(limite) {
       // Só os últimos 3 dias: depois disso, o Pix (30 min) e a reentrega do webhook já acabaram há muito.
+      // Pedido com alerta (estorno pendente, valor ou pedido divergente) é caso para a dona, não para a
+      // rodada: repetir o GET e o log a cada 15 min só ocupa o limite (devolução de 4-Nov, item 2).
       const desde = new Date(Date.now() - 3 * 24 * 3_600_000).toISOString();
       const { data, error } = await db.from('pedidos').select('id, status, mp_order_id').in('status', ['aberto', 'cancelado'])
-        .not('mp_order_id', 'is', null).is('mp_cancelado_em', null).gte('criado_em', desde).order('criado_em').limit(limite);
+        .not('mp_order_id', 'is', null).is('mp_cancelado_em', null).is('alerta_pagamento', null).gte('criado_em', desde).order('criado_em').limit(limite);
       if (error) throw erroDeBanco('ler pedidos com order', error.code);
       return ((data ?? []) as { id: string; status: 'aberto' | 'cancelado'; mp_order_id: string }[]).map((l): PedidoComOrder => ({ id: l.id, status: l.status, mpOrderId: l.mp_order_id }));
     },

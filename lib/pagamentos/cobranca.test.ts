@@ -35,7 +35,7 @@ class Portas extends LojaFalsa implements PortasCobranca {
   }
   async cancelarOrder(orderId: string) { this.canceladas.push(orderId); return { ok: true, transitorio: false }; }
   async cobrancasVivasCanceladas() { return this.vivas; }
-  async marcarCanceladaNoMP(id: string) { this.marcadas.push(id); }
+  async marcarCanceladaNoMP(id: string) { this.marcadas.push(id); return true; }
 }
 
 const gerar = (portas: Portas, extra: Partial<Parameters<typeof gerarPix>[0]> = {}) =>
@@ -103,6 +103,31 @@ describe('cobrança Pix do pedido reservado (L3)', () => {
     portas.gravarDevolve = false;
     expect(await gerar(portas)).toEqual({ ok: false, motivo: 'fechado' });
     expect(portas.canceladas).toEqual(['ORD-NOVA']);
+  });
+
+  it('devolução 4-Nov, bloqueante 1: duas abas, a outra gravou a MESMA order → sucesso, sem cancelar', async () => {
+    // As duas abas leram mp_order_id nulo e mandaram a mesma chave: o Mercado Pago devolve a mesma order.
+    // A outra aba gravou primeiro; aqui o UPDATE toca 0 linhas, e cancelar seria cancelar o Pix válido.
+    portas.gravarCobranca = async (_id: string, d: DadosCobranca) => {
+      portas.linha!.mpOrderId = d.mpOrderId;
+      portas.linha!.qrCode = d.qrCode;
+      return false;
+    };
+    expect(await gerar(portas)).toEqual({ ok: true, criada: false });
+    expect(portas.canceladas).toEqual([]);
+    expect(portas.linha?.mpOrderId).toBe('ORD-NOVA');
+  });
+
+  it('devolução 4-Nov, bloqueante 1: a releitura falhou → não cancela (pode ser a order da outra aba)', async () => {
+    portas.gravarDevolve = false;
+    let leituras = 0;
+    portas.lerPedido = async () => {
+      leituras += 1;
+      if (leituras > 1) throw new Error('banco fora');
+      return { ...portas.linha! };
+    };
+    expect(await gerar(portas)).toEqual({ ok: false, motivo: 'indisponivel' });
+    expect(portas.canceladas).toEqual([]);
   });
 
   it('T18: pedido substituído → a order do anterior é cancelada no Mercado Pago', async () => {

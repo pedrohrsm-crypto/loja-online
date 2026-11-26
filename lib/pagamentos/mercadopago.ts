@@ -5,7 +5,8 @@
 // https://www.mercadopago.com.br/developers/pt/reference/online-payments/checkout-api/create-order/post):
 // - toda mutação leva `X-Idempotency-Key` (obrigatória; de 1 a 128 caracteres);
 // - tempo máximo de 8 s por chamada: o webhook tem 22 s para responder (RISCOS §1);
-// - 5xx, 423, 429 e falha de rede são TRANSITÓRIOS (tentar de novo depois); 4xx é recusa;
+// - 5xx, 423, 429 e falha de rede são TRANSITÓRIOS (tentar de novo depois); 4xx é recusa, mas 401 e
+//   403 são a credencial da loja, não a order: quem lê decide por `ehCredencialRecusada` (confirmar.ts);
 // - o corpo de erro vai para o log só com o código, nunca com o que mandamos (o payer leva e-mail).
 import 'server-only';
 import { log } from '@/lib/observabilidade/logger';

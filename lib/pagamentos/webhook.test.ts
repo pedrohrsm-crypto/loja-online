@@ -109,6 +109,27 @@ describe('webhook do Mercado Pago (L4)', () => {
     expect(await enviar({ req: 'req-2' })).toEqual({ status: 200, corpo: { recebido: true, resultado: 'invalido' } });
   });
 
+  it('devolução 4-Nov, bloqueante 2: credencial recusada (401) no GET → 500 e reserva devolvida, nunca concluída', async () => {
+    loja.falharGet = 'credencial';
+    expect((await enviar()).status).toBe(500);
+    expect(loja.eventos.size).toBe(0);
+    loja.falharGet = null;
+    expect((await enviar()).corpo.resultado).toBe('pago');
+  });
+
+  it('devolução 4-Nov, item 1: sem x-request-id, outra notificação da mesma order NÃO sai como duplicada', async () => {
+    loja.orders.set(ORDER, { ...loja.orders.get(ORDER)!, status: 'action_required', status_detail: 'waiting_transfer' });
+    const semReq = (corpo: object) => processarWebhook({
+      corpo: JSON.stringify(corpo), xSignature: `ts=${AGORA},v1=${assinar(manifest(ORDER.toLowerCase(), null, String(AGORA)), SEGREDO)}`,
+      xRequestId: null, dataId: ORDER, tipo: 'order', config: CONFIG, eventos: loja, portas: loja, agoraMs: AGORA,
+    });
+    expect((await semReq({ type: 'order', action: 'order.action_required', live_mode: false })).corpo.resultado).toBe('aguardando');
+    loja.orderPaga(ORDER, PEDIDO, '75.00');
+    expect((await semReq({ type: 'order', action: 'order.processed', live_mode: false })).corpo.resultado).toBe('pago');
+    // A reentrega idêntica continua duplicada (T8).
+    expect((await semReq({ type: 'order', action: 'order.processed', live_mode: false })).corpo.resultado).toBe('duplicado');
+  });
+
   it('T16: live_mode=true num pedido de teste → 200 com aviso, sem GET e sem efeito', async () => {
     const r = await enviar({ corpo: { type: 'order', live_mode: true, data: { id: ORDER } } });
     expect(r).toEqual({ status: 200, corpo: { recebido: true, resultado: 'modo-divergente' } });

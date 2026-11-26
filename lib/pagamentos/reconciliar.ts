@@ -9,11 +9,12 @@
 //        - paga → confirmar_pagamento_mp (aprovado que o webhook perdeu, T14; pago depois de expirar, T5);
 //        - aguardando e o pedido já cancelado → cancela a order no Mercado Pago (fecha a janela do T5);
 //        - encerrada e o pedido cancelado → só marca que não há mais o que olhar.
-// Sem resposta do Mercado Pago, não decide nada: conta como falha, e a rodada responde 500 para o
-// agendador avisar (o GitHub manda e-mail quando o workflow falha).
+// Sem resposta do Mercado Pago, com a credencial recusada (401/403) ou com uma order que ele não
+// reconhece, não decide nada: conta como falha, e a rodada responde 500 para o agendador avisar (o GitHub
+// manda e-mail quando o workflow falha).
 import { log } from '@/lib/observabilidade/logger';
 import type { ConfigMP } from './config';
-import { FalhaTransitoria, conferirOrder, type PortasConfirmacao, type ResultadoConfirmacao } from './confirmar';
+import { FalhaConfiguracao, FalhaTransitoria, conferirOrder, type PortasConfirmacao, type ResultadoConfirmacao } from './confirmar';
 import { podeCancelar } from './order';
 import { chaveDoCancelamento } from './cobranca';
 
@@ -28,7 +29,8 @@ export interface PortasReconciliacao extends PortasConfirmacao {
   expirarVencidos(): Promise<number>;
   pedidosComOrderViva(limite: number): Promise<PedidoComOrder[]>;
   cancelarOrder(orderId: string, chave: string): Promise<{ ok: boolean; transitorio: boolean }>;
-  marcarCanceladaNoMP(pedidoId: string): Promise<void>;
+  /** true = 1 linha marcada; false = 0 linhas (outro já marcou, ou o pedido mudou). Lança em erro de banco. */
+  marcarCanceladaNoMP(pedidoId: string): Promise<boolean>;
 }
 
 export type ResumoRodada = {
@@ -73,8 +75,17 @@ export async function rodadaDeReconciliacao(config: ConfigMP, portas: PortasReco
           resumo.confirmados[c.resultado] = (resumo.confirmados[c.resultado] ?? 0) + 1;
           continue;
         }
+        if (c.tipo === 'order-invalida' && p.status !== 'cancelado') {
+          // Order que o Mercado Pago não reconhece (404) ou não entende, num pedido aberto: ninguém
+          // consegue pagar por aqui, e só uma pessoa resolve. Conta falha: a rota responde 500.
+          resumo.falhas += 1;
+          continue;
+        }
         if (p.status !== 'cancelado') continue;
-        if (c.tipo === 'sem-efeito' && podeCancelar(c.order)) {
+        // Só marca "cancelada no MP" com prova: o MP cancelou agora (POST ok) ou o GET diz que ela já
+        // está encerrada. Order inválida nunca é marcada sem o cancelamento de fato (devolução de 4-Nov,
+        // bloqueante 2): senão sai da reconciliação, e um Pix pago depois de expirar (T5) se perde.
+        if (c.tipo === 'order-invalida' || (c.tipo === 'sem-efeito' && podeCancelar(c.order))) {
           const r = await portas.cancelarOrder(p.mpOrderId, chaveDoCancelamento(p.id));
           if (!r.ok) {
             resumo.falhas += 1;
@@ -83,11 +94,12 @@ export async function rodadaDeReconciliacao(config: ConfigMP, portas: PortasReco
         } else if (c.tipo === 'sem-efeito' && c.situacao === 'pendente') {
           continue; // processando: a próxima rodada olha de novo
         }
-        await portas.marcarCanceladaNoMP(p.id);
-        resumo.canceladasNoMP += 1;
+        // 0 linhas não é falha (a outra rodada ou a tela já marcou; o pedido foi reativado), mas também
+        // não é contada: o resumo só diz o que esta rodada fez (devolução de 4-Nov, item 3).
+        if (await portas.marcarCanceladaNoMP(p.id)) resumo.canceladasNoMP += 1;
       } catch (e) {
         resumo.falhas += 1;
-        log.error(ESCOPO, 'pedido não conferido', { pedido: p.id, transitoria: e instanceof FalhaTransitoria, erro: e instanceof Error ? e.message : String(e) });
+        log.error(ESCOPO, 'pedido não conferido', { pedido: p.id, transitoria: e instanceof FalhaTransitoria, configuracao: e instanceof FalhaConfiguracao, erro: e instanceof Error ? e.message : String(e) });
       }
     }
   } finally {

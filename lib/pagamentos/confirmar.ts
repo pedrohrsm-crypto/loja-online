@@ -12,7 +12,20 @@ export type ResultadoConfirmacao = (typeof RESULTADOS)[number];
 /** Falha que tentar de novo pode resolver (rede, banco, Mercado Pago fora): webhook 500, reconciliação conta falha. */
 export class FalhaTransitoria extends Error {}
 
-export type LeituraOrderRemota = { ok: true; json: unknown } | { ok: false; transitorio: boolean };
+/**
+ * Credencial recusada pelo Mercado Pago (401/403: token errado, revogado ou sem permissão). Não é dado
+ * ruim da order: é a loja que está quebrada, e tentar de novo DEPOIS do conserto resolve. Por isso segue
+ * o caminho da falha transitória (webhook 500, reconciliação conta falha e a rota responde 500), e nunca
+ * vira "order inválida" (devolução do PM de 4-Nov, bloqueante 2).
+ */
+export class FalhaConfiguracao extends FalhaTransitoria {}
+
+/** 401 e 403 do Mercado Pago: a credencial da loja, não a order. Um lugar só para essa regra. */
+export function ehCredencialRecusada(status: number | null): boolean {
+  return status === 401 || status === 403;
+}
+
+export type LeituraOrderRemota = { ok: true; json: unknown } | { ok: false; transitorio: boolean; status: number | null };
 
 export interface PortasConfirmacao {
   buscarOrder(orderId: string): Promise<LeituraOrderRemota>;
@@ -36,7 +49,8 @@ export async function conferirOrder(orderId: string, modo: ModoPagamento, portas
   const r = await portas.buscarOrder(orderId);
   if (!r.ok) {
     if (r.transitorio) throw new FalhaTransitoria('GET da order falhou');
-    log.warn(escopo, 'order recusada pelo Mercado Pago', { order: orderId });
+    if (ehCredencialRecusada(r.status)) throw new FalhaConfiguracao(`credencial recusada pelo Mercado Pago (${r.status})`);
+    log.warn(escopo, 'order recusada pelo Mercado Pago', { order: orderId, status: r.status });
     return { tipo: 'order-invalida' };
   }
   const order = lerOrder(r.json);

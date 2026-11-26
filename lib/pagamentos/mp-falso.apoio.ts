@@ -32,7 +32,8 @@ export class LojaFalsa implements PortasConfirmacao, RepositorioEventos {
   confirmacoes = 0;
   /** Quantas vezes um pedido virou pago (a "baixa"): T9 exige 1. */
   baixas = new Map<string, number>();
-  falharGet: 'transitorio' | 'recusa' | null = null;
+  /** transitorio = rede/5xx; recusa = 404; credencial = 401 (token errado ou revogado). */
+  falharGet: 'transitorio' | 'recusa' | 'credencial' | null = null;
   falharBanco = false;
 
   orderPaga(id: string, pedidoId: string, total: string, extra: Partial<OrderFalsa> = {}) {
@@ -45,9 +46,11 @@ export class LojaFalsa implements PortasConfirmacao, RepositorioEventos {
 
   async buscarOrder(orderId: string): Promise<LeituraOrderRemota> {
     this.gets += 1;
-    if (this.falharGet) return { ok: false, transitorio: this.falharGet === 'transitorio' };
+    if (this.falharGet === 'transitorio') return { ok: false, transitorio: true, status: 503 };
+    if (this.falharGet === 'credencial') return { ok: false, transitorio: false, status: 401 };
+    if (this.falharGet === 'recusa') return { ok: false, transitorio: false, status: 404 };
     const o = this.orders.get(orderId);
-    return o ? { ok: true, json: structuredClone(o) } : { ok: false, transitorio: false };
+    return o ? { ok: true, json: structuredClone(o) } : { ok: false, transitorio: false, status: 404 };
   }
 
   async confirmar(a: { orderId: string; externalReference: string | null; valorCentavos: number; modo: ModoPagamento }): Promise<ResultadoConfirmacao> {

@@ -23,7 +23,7 @@ class Portas extends LojaFalsa implements PortasReconciliacao {
       .map((p) => ({ id: p.id, status: p.status as 'aberto' | 'cancelado', mpOrderId: p.mpOrderId! }));
   }
   async cancelarOrder(orderId: string) { this.canceladas.push(orderId); return { ok: true, transitorio: false }; }
-  async marcarCanceladaNoMP(id: string) { this.marcadas.push(id); }
+  async marcarCanceladaNoMP(id: string) { this.marcadas.push(id); return true; }
 }
 
 const esperando = (id: string, pedido: string) => ({ id, status: 'action_required', status_detail: 'waiting_transfer', external_reference: pedido, total_amount: '75.00' });
@@ -79,6 +79,46 @@ describe('reconciliação do Pix (L5)', () => {
     expect(r.falhas).toBe(1);
     expect(p.marcadas).toEqual([]);
     expect(p.canceladas).toEqual([]);
+  });
+
+  it('devolução 4-Nov, bloqueante 2: credencial recusada (401) no pedido cancelado → falha, nunca marca', async () => {
+    p.pedido({ id: 'p8', mpOrderId: 'ORD-8', status: 'cancelado' });
+    p.orderPaga('ORD-8', 'p8', '75.00');
+    p.falharGet = 'credencial';
+    const r = await rodadaDeReconciliacao(TESTE, p);
+    expect(r).toMatchObject({ falhas: 1, canceladasNoMP: 0 });
+    expect(p.marcadas).toEqual([]);
+  });
+
+  it('devolução 4-Nov, bloqueante 2: credencial recusada (401) no pedido aberto → conta falha (a rota responde 500)', async () => {
+    p.pedido({ id: 'p9', mpOrderId: 'ORD-9' });
+    p.falharGet = 'credencial';
+    expect((await rodadaDeReconciliacao(TESTE, p)).falhas).toBe(1);
+  });
+
+  it('devolução 4-Nov, bloqueante 2: order inexistente (404) no pedido cancelado → só marca se o cancelamento no MP der certo', async () => {
+    p.pedido({ id: 'p10', mpOrderId: 'ORD-10', status: 'cancelado' });
+    p.cancelarOrder = async (orderId: string) => { p.canceladas.push(orderId); return { ok: false, transitorio: false }; };
+    const r = await rodadaDeReconciliacao(TESTE, p);
+    expect(r).toMatchObject({ falhas: 1, canceladasNoMP: 0 });
+    expect(p.canceladas).toEqual(['ORD-10']);
+    expect(p.marcadas).toEqual([]);
+  });
+
+  it('devolução 4-Nov, bloqueante 2: order inexistente (404) no pedido aberto → conta falha, nada muda', async () => {
+    p.pedido({ id: 'p11', mpOrderId: 'ORD-11' });
+    const r = await rodadaDeReconciliacao(TESTE, p);
+    expect(r).toMatchObject({ falhas: 1, canceladasNoMP: 0 });
+    expect(p.canceladas).toEqual([]);
+  });
+
+  it('devolução 4-Nov, item 3: marcar tocou 0 linhas → não conta como cancelada no MP', async () => {
+    p.pedido({ id: 'p12', mpOrderId: 'ORD-12', status: 'cancelado' });
+    p.orders.set('ORD-12', esperando('ORD-12', 'p12'));
+    p.marcarCanceladaNoMP = async () => false;
+    const r = await rodadaDeReconciliacao(TESTE, p);
+    expect(r).toMatchObject({ canceladasNoMP: 0, falhas: 0 });
+    expect(p.canceladas).toEqual(['ORD-12']);
   });
 
   it('expiração falhou: conta falha, mas o resto da rodada segue', async () => {
